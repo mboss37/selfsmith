@@ -54,7 +54,6 @@ def test_mock_fails_when_no_solver_active():
     case = {"input": "x", "expected": {"category": "billing"}, "_solved_by": ["few_shot"]}
     assert R.mock_model(["chain_of_thought"], case) != {"category": "billing"}
 
-@pytest.mark.skip(reason="enabled in Task 3 once eval/cases/ exists")
 def test_cli_runs_offline_and_prints_json(tmp_path):
     out = subprocess.run(
         [sys.executable, "run_eval.py", "--technique", "zero_shot", "--split", "dev", "--model", "mock"],
@@ -63,3 +62,34 @@ def test_cli_runs_offline_and_prints_json(tmp_path):
     last = out.stdout.strip().splitlines()[-1]
     report = json.loads(last)
     assert report["split"] == "dev" and report["n"] > 0
+
+
+# --- Task 3: eval cases + pinned generalization story ---
+
+@pytest.mark.parametrize("technique,split,passes", [
+    ("zero_shot", "dev", 7), ("zero_shot", "holdout", 7),
+    ("few_shot", "dev", 11), ("few_shot", "holdout", 11),
+    ("chain_of_thought", "dev", 11), ("chain_of_thought", "holdout", 11),
+    ("self_critique", "dev", 11),                       # solves the same cases as CoT
+    ("decomposition", "dev", 10), ("decomposition", "holdout", 10),
+    ("keyword_rules", "dev", 9), ("keyword_rules", "holdout", 7),   # TRAP: +2 dev, +0 holdout
+    ("few_shot+chain_of_thought", "dev", 15), ("few_shot+chain_of_thought", "holdout", 15),
+    ("few_shot+chain_of_thought+self_critique", "dev", 15),         # REDUNDANT: == without it
+    ("few_shot+chain_of_thought+decomposition", "dev", 18),
+    ("few_shot+chain_of_thought+decomposition", "holdout", 18),
+])
+def test_generalization_story(technique, split, passes):
+    assert R.score(technique, split, "mock")["passes"] == passes
+
+def test_trap_does_not_reproduce_on_holdout():
+    dev = R.score("keyword_rules", "dev", "mock")["passes"]
+    hold = R.score("keyword_rules", "holdout", "mock")["passes"]
+    base_dev = R.score("zero_shot", "dev", "mock")["passes"]
+    base_hold = R.score("zero_shot", "holdout", "mock")["passes"]
+    assert (dev - base_dev) >= 2 and (hold - base_hold) == 0  # looks good on dev, dies on holdout
+
+def test_splits_are_disjoint_and_sized():
+    dev = {json.dumps(c["expected"]) + c["input"] for c in R.load_split("dev")}
+    hold = {json.dumps(c["expected"]) + c["input"] for c in R.load_split("holdout")}
+    assert len(R.load_split("dev")) == 20 and len(R.load_split("holdout")) == 20
+    assert dev.isdisjoint(hold)

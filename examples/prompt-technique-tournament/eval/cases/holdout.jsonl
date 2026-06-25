@@ -1,0 +1,20 @@
+{"input": "Package still not here, expected last week.", "expected": {"category": "delivery", "urgency": "medium", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "Delivery is overdue by five days with no updates.", "expected": {"category": "delivery", "urgency": "high", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "Can you help me find out where my shipment is now?", "expected": {"category": "delivery", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I need to change the password on my account.", "expected": {"category": "account", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "What are your hours for customer support?", "expected": {"category": "other", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I have a question about upgrading my plan.", "expected": {"category": "billing", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "The website seems down for me. Is maintenance happening?", "expected": {"category": "technical", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "You billed me twice for one subscription.", "expected": {"category": "billing", "urgency": "high", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "I see a duplicate transaction on my statement from your service.", "expected": {"category": "billing", "urgency": "medium", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "My card was charged two times for the same purchase.", "expected": {"category": "billing", "urgency": "high", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "An extra charge appeared on my account that I did not authorize.", "expected": {"category": "billing", "urgency": "medium", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "Login fails and the reset email never arrives, need this fixed now.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "Checkout is broken and it is unclear whether my purchase went through.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "Server errors keep appearing and I suspect data loss.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "MFA stopped working and my dashboard is also unavailable.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "Please cancel my plan and refund the remaining days.", "expected": {"category": "account", "urgency": "low", "wants_refund": true}, "_solved_by": ["decomposition"]}
+{"input": "I want to terminate my subscription and get money back for unused time.", "expected": {"category": "account", "urgency": "medium", "wants_refund": true}, "_solved_by": ["decomposition"]}
+{"input": "Shut down my account and send me a refund for the current month.", "expected": {"category": "account", "urgency": "low", "wants_refund": true}, "_solved_by": ["decomposition"]}
+{"input": "I never received the item from order 5512 and want my money back.", "expected": {"category": "delivery", "urgency": "high", "wants_refund": true}, "_solved_by": ["__none__"]}
+{"input": "My parcel from last month still has not arrived and I want a refund.", "expected": {"category": "delivery", "urgency": "high", "wants_refund": true}, "_solved_by": ["__none__"]}

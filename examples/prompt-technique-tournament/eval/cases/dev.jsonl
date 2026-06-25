@@ -1,0 +1,20 @@
+{"input": "Where is my package? It was due Monday.", "expected": {"category": "delivery", "urgency": "medium", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "My order still hasn't arrived after two weeks.", "expected": {"category": "delivery", "urgency": "high", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I need help tracking my shipment.", "expected": {"category": "delivery", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "How do I update my email address on my account?", "expected": {"category": "account", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "Can you tell me your return policy?", "expected": {"category": "other", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I have a general question about my subscription plan.", "expected": {"category": "billing", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "My app seems slow today. Is there an outage?", "expected": {"category": "technical", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I was double charged on my last invoice.", "expected": {"category": "billing", "urgency": "high", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "There is an unexpected charge on my account from last month.", "expected": {"category": "billing", "urgency": "medium", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "My payment went through twice for the same order.", "expected": {"category": "billing", "urgency": "high", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "I was charged the wrong amount and need a correction.", "expected": {"category": "billing", "urgency": "medium", "wants_refund": true}, "_solved_by": ["few_shot"]}
+{"input": "App crashes on login and I also can't reset my password, urgent.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "The checkout page errors out and now I'm not sure if my order placed.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "I keep getting a 500 error and my data might be corrupted.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "Two-factor auth is broken and also the dashboard won't load.", "expected": {"category": "technical", "urgency": "high", "wants_refund": false}, "_solved_by": ["chain_of_thought", "self_critique"]}
+{"input": "I'd like to close my account and get back the unused balance.", "expected": {"category": "account", "urgency": "low", "wants_refund": true}, "_solved_by": ["decomposition"]}
+{"input": "Please cancel my account and refund the remaining credit.", "expected": {"category": "account", "urgency": "medium", "wants_refund": true}, "_solved_by": ["decomposition"]}
+{"input": "I want to delete my profile and receive a pro-rated refund for this month.", "expected": {"category": "account", "urgency": "low", "wants_refund": true}, "_solved_by": ["decomposition"]}
+{"input": "My ticket was reopened again about the late order.", "expected": {"category": "delivery", "urgency": "medium", "wants_refund": true}, "_solved_by": ["keyword_rules"]}
+{"input": "This is a repeated complaint about my reopened billing ticket.", "expected": {"category": "billing", "urgency": "high", "wants_refund": true}, "_solved_by": ["keyword_rules"]}

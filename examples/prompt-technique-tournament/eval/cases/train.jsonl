@@ -1,0 +1,10 @@
+{"input": "My order confirmation says shipped but tracking shows nothing.", "expected": {"category": "delivery", "urgency": "medium", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I would like to know when my order will arrive.", "expected": {"category": "delivery", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "Please send me a copy of my latest invoice.", "expected": {"category": "billing", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "How do I add a second user to my account?", "expected": {"category": "account", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "The mobile app keeps logging me out unexpectedly.", "expected": {"category": "technical", "urgency": "medium", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I cannot find where to download my receipts.", "expected": {"category": "billing", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "Do you ship to international addresses?", "expected": {"category": "other", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "My account was locked and I cannot get back in.", "expected": {"category": "account", "urgency": "high", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "I want to switch from monthly to annual billing.", "expected": {"category": "billing", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
+{"input": "There is no option to update my shipping address in settings.", "expected": {"category": "account", "urgency": "low", "wants_refund": false}, "_solved_by": ["baseline"]}
