@@ -2,6 +2,12 @@
 
 A self-improving loop that runs a tournament over prompting techniques for a fixed use-case (support-message triage) and converges on the technique that generalizes best to **unseen cases**. The harness is offline and deterministic by default — no API key needed.
 
+## Prerequisites
+
+- [Claude Code CLI](https://claude.com/claude-code)
+- Python 3.11+
+- `pip install -r requirements.txt` (installs pytest; no API key needed for offline runs)
+
 ## What this loop does
 
 Each iteration, the loop (`/iterate`):
@@ -84,7 +90,7 @@ eval/
   run_eval.py           — scorer (--technique, --split, --model)
   techniques.py         — full technique catalog + renderers
   cases/                — train.jsonl, dev.jsonl, holdout.jsonl
-  champion.json         — current champion + scores
+  champion.json         — loop's SEED/start state (zero_shot, 35%); the loop walks it forward. The converged champion (few_shot+chain_of_thought+decomposition, 90%) is shown in eval/leaderboard.md
   leaderboard.md        — full ranked history including rejections
 GOAL.md                 — what "done" looks like
 PERSONA.md              — Vera's principles

@@ -2,11 +2,24 @@
 
 > A self-improving loop that forges itself, one tested change at a time.
 
+<!-- Replace OWNER with your GitHub username after creating the repo -->
+![CI](https://github.com/OWNER/selfsmith/actions/workflows/ci.yml/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A reusable, domain-agnostic self-improvement loop, extracted from a production Claude Code harness and hardened to run unattended without (a) fooling itself or (b) wrecking the machine.
+
+### Why use this
+
+Building this loop yourself takes several painful iterations to discover the failure modes this ships as structure: the adversarial gate that independently vetoes each change, the mechanical floor the loop genuinely cannot lift (not just an instruction it could argue around), honest-negative logging that counts "tested and killed" as a win, and the holdout discipline that prevents the loop from gaming its own metric. Those four things are what make an unattended loop trustworthy rather than theatrical.
 
 Copy `template/`, fill the blanks, and have a disciplined, unattended, self-improving Claude Code loop for your domain. The `examples/prompt-technique-tournament/` directory is the same engine fully instantiated — runs offline with no API key.
 
 ---
+
+## Prerequisites
+
+- [Claude Code CLI](https://claude.com/claude-code) — the loop runs as a Claude Code slash command.
+- Python 3.11+ and `pip install -r requirements.txt` (installs pytest) to run the example offline without an API key.
 
 ## Quick start
 
@@ -25,9 +38,9 @@ The loop is a Claude Code **slash command**. Open Claude Code **in the loop's di
 
 Anthropic's evaluator–optimizer pattern, disciplined enough for unattended operation. One role evaluates and diagnoses. Another proposes and implements. A third tries to kill the change. The machine can only improve by running this cycle — it can never promote itself past the gate.
 
-Two properties make it safe to leave running:
+Two properties make it disciplined enough to leave running:
 
-- **The loop can't lift its own floor.** A shell hook (not an instruction, a hard block) enforces the domain safety constraint. An agent can't talk its way around it.
+- **A mechanical floor the loop can't lift.** A shell hook — not an instruction — gates Bash AND the file-edit tools (Edit/Write/MultiEdit), so the loop can't rewrite its own guardrail, settings, or a protected path. The hook fails closed: an unparseable tool call is blocked, not allowed through. That said, a command deny-list is a **tripwire for honest mistakes, not a complete security boundary** against an adversarial agent — shell quoting and obfuscation can evade any string-matching list. For genuinely safe unattended runs, add an OS sandbox (macOS Sandbox, a container, or an unprivileged user) where destructive syscalls are impossible at the OS level, and optionally `chmod 0444` the guardrail and settings files. Distinguish the **mechanical floor** (hook + OS sandbox) from the **disciplinary controls** (gate veto, meta-improver restraint, orchestrator) — the latter are LLM judgment, not hard blocks.
 - **Gates default to REJECT.** Killing a good idea is cheaper than shipping a bad one.
 
 ---
@@ -68,7 +81,7 @@ These are the IP — carry them verbatim when instantiating.
 
 1. Doing and checking are **never the same role** — independent adversarial review with veto.
 2. **One change per iteration** — reversible, logged, attributable.
-3. The loop **can't lift its own floor** — hook (mechanical) + gate (judgment) + meta-improver barred from loosening safeguards.
+3. The loop **can't lift its own floor** — hook (mechanical, gates Bash + write tools, fails closed) + gate (judgment) + meta-improver barred from loosening safeguards. The deny-list is a tripwire; the real boundary for unattended runs is an OS sandbox.
 4. Orchestrator is a **thin router** — triage → route → decide, never implements.
 5. Gates **default to REJECT** — killing a good idea is cheaper than shipping a bad one.
 6. **Honest negatives count** — "tested, killed, why" is a win; no activity theatre.
