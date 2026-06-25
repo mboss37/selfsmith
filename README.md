@@ -1,4 +1,6 @@
-# Loop Engine
+# Selfsmith
+
+> A self-improving loop that forges itself, one tested change at a time.
 
 A reusable, domain-agnostic self-improvement loop, extracted from a production Claude Code harness and hardened to run unattended without (a) fooling itself or (b) wrecking the machine.
 
