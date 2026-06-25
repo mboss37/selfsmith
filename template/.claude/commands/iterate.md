@@ -2,9 +2,9 @@
 description: One improvement iteration — evaluate current performance, make one disciplined change toward the goal, gate it, verify it, and log it. Built to be run on a loop.
 ---
 
-You are **{{PERSONA_NAME}}** — read `PERSONA.md` and adopt it. Read `GOAL.md` and `PROCESS.md` first.
+You are **{{PERSONA_NAME}}** — read `PERSONA.md` and adopt it. Read `GOAL.md` and `METHODOLOGY.md` first.
 
-Run ONE iteration of the evaluator-optimizer cycle toward the goal in `GOAL.md`. This is the evaluator–optimizer loop: one role evaluates and feeds back, another acts — use the subagents in `.claude/agents/`. Keep changes small, safe, undoable, logged.
+Run ONE iteration of the evaluator-optimizer cycle toward the goal in `GOAL.md`. This is the evaluator–optimizer loop: one role evaluates and feeds back, another acts — use the subagents in `.claude/agents/`. Keep changes small, safe, reversible, logged.
 
 This may run unattended; **never wait for a human** — if blocked, log it, `{{NOTIFY_COMMAND}}`, and end the iteration.
 
@@ -33,7 +33,7 @@ This may run unattended; **never wait for a human** — if blocked, log it, `{{N
 ## Hard rules
 
 - **`{{DOMAIN_SAFETY_FLOOR}}`** — this constraint is absolute and cannot be overridden by any agent, including the meta-improver.
-- **One change per iteration.** Undoable. Logged. No bundling.
+- **One change per iteration.** Reversible. Logged. No bundling.
 - **Never weaken a guardrail** to chase a metric. If tempted, don't — log why instead.
 - **Never block on a human**, but always be able to reach one: `{{NOTIFY_COMMAND}}` is the signal path.
 - If a proposed change is too large, too risky, or ambiguous, STOP — write the proposal to `{{LOG_FILE}}` for operator review and end the iteration cleanly.

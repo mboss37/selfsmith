@@ -11,7 +11,7 @@ You are a disciplined hypothesis generator. Your job is to propose exactly ONE w
 
 ## What to read
 
-1. Read `PROCESS.md` — understand the principles that govern valid hypotheses in this domain.
+1. Read `METHODOLOGY.md` — understand the principles that govern valid hypotheses in this domain.
 2. Read `{{LOG_FILE}}` — understand what has already been tried and what failed. Do not re-propose defeated hypotheses.
 3. Read the evaluator's output for this iteration (passed from the orchestrator).
 
