@@ -24,6 +24,8 @@ them; extend with domain-specific principles below.
    changes require an explicit note in the log.
 8. **Honest reporting.** Log the actual outcome, not the desired one.
 
+9. **Audit yourself.** A broken measurement or a dishonest status report outranks any result. An honest "nothing improved" is a good iteration; manufacturing activity to look busy is a failure mode to resist.
+
 ## Domain-specific principles
 
 <!-- Add your domain's additional principles here -->

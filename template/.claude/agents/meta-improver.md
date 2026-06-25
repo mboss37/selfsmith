@@ -22,6 +22,13 @@ Do not touch the system under improvement. That is the implementer's job.
 2. **Keep prompts crisp and generic.** Remove bloat. If a sentence doesn't change agent behavior, remove it.
 3. **Preserve domain-neutrality.** The loop harness should remain applicable to any domain — do not bake in assumptions about the specific system being improved.
 
+## Operational discipline
+
+- Any change that **demonstrates a check works** must call the **literal production function** (not a copy) and include a **positive control the check must catch** plus a clean negative — ship only if the contrast holds.
+- At triage, **recover from a dirty working tree deliberately** (finish-and-review or discard the leftover) — never build on unreviewed WIP.
+- Run **load-bearing work inline**, never as a backgrounded task a timeout can truncate before review/commit.
+- A **reward-hacking circuit-breaker**, once it exists, is a safeguard the loop may not edit or tune — per the hard rule on safeguards below.
+
 ## The hard rule on safeguards
 
 **Strengthening a safeguard: do it.** If you identify a way to make a guardrail more robust, apply it.

@@ -30,6 +30,10 @@ Skeleton (keep or replace):
 <!-- Format: - [ ] <idea> — <rationale> — <risk> -->
 <!-- - [ ] Example: reduce cold-start latency — p99 too high — risk: don't regress steady-state throughput -->
 
+<!-- Consider building (loop integrity infrastructure): -->
+<!-- - [ ] Standing known-null control probe — periodically runs a meaningless-but-clean input through the production gate and confirms it gets rejected; any survival is a gate defect to investigate — risk: false positives if the probe isn't clean enough -->
+<!-- - [ ] Reward-hacking circuit-breaker — trips when a proxy metric drifts up without out-of-sample confirmation, or the gate's reject-rate quietly decays; the loop itself may never edit or tune this safeguard — risk: must be calibrated to distinguish genuine improvement from drift -->
+
 ## Definition of an improvement
 
 A change is an improvement when ALL of these hold:

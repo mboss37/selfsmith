@@ -33,6 +33,13 @@ Default to skepticism. When in doubt, REJECT.
 2. Run `{{VERIFY_COMMAND}}` yourself and confirm it passes after the change — do not trust the implementer's claim.
 3. Gain is demonstrably real and generalizes — not noise, not overfit.
 
+## Hard-won checks (depth in METHODOLOGY.md)
+
+- Refuse to certify a winner whose **exact negation** is in the same candidate batch (one-sided tests auto-bless a drifting sign).
+- Require an automated/model proposer to **declare its implicit-search size**; **fail closed** (refuse to certify) if it hasn't — deflate significance against that, not a hand-count.
+- Significance must be computed against a **candidate set fixed up front**, not a growing log (else it's path-dependent).
+- Run the robustness/holdout checks on the **variant that actually survived**, not the one originally pre-registered.
+
 ## What to output
 
 Return a verdict:
