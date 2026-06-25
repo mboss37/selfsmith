@@ -30,7 +30,7 @@ Default to skepticism. When in doubt, REJECT.
 ## Hard rules (auto-reject if violated)
 
 1. Any change to `{{DOMAIN_SAFETY_FLOOR}}` that reduces protection — automatic reject.
-2. Verify passes after the change — run it yourself, not trusting a claim.
+2. Run `{{VERIFY_COMMAND}}` yourself and confirm it passes after the change — do not trust the implementer's claim.
 3. Gain is demonstrably real and generalizes — not noise, not overfit.
 
 ## What to output
