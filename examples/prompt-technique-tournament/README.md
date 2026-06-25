@@ -24,13 +24,8 @@ claude          # opens Claude Code in this directory
 Inside Claude Code:
 
 ```
-/iterate        # one iteration
-```
-
-To run a session-scoped loop (self-pacing, one iteration every ~30 minutes):
-
-```
-/loop 30m /iterate
+/iterate              # ONE iteration, manually
+/loop 30m /iterate    # CONTINUOUS — one iteration every 30 min (pick any interval)
 ```
 
 The loop is offline by default — no API key, no paid calls, safe to run unattended.

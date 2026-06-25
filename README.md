@@ -6,6 +6,19 @@ Copy `template/`, fill the blanks, and have a disciplined, unattended, self-impr
 
 ---
 
+## Quick start
+
+The loop is a Claude Code **slash command**. Open Claude Code **in the loop's directory** (so it loads that `.claude/`), then:
+
+```
+/iterate              # run ONE iteration, manually
+/loop 1h /iterate     # run CONTINUOUSLY — one iteration every hour (pick any interval)
+```
+
+`/iterate` shows up in the `/` menu automatically — it's defined in `.claude/commands/iterate.md`. For hands-off runs, schedule `claude --continue -p "/iterate"` on a cron. New here? Copy `template/`, fill the blanks per `INSTANTIATE.md`, then trigger as above.
+
+---
+
 ## What this is
 
 Anthropic's evaluator–optimizer pattern, disciplined enough for unattended operation. One role evaluates and diagnoses. Another proposes and implements. A third tries to kill the change. The machine can only improve by running this cycle — it can never promote itself past the gate.
