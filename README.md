@@ -104,7 +104,7 @@ The `examples/prompt-technique-tournament/` is the richer discover-and-validate 
 ## How to instantiate
 
 ```bash
-cp -r loop-engine/template/ my-loop/
+cp -r template/ my-loop/
 ```
 
 Then follow `INSTANTIATE.md` in your new directory (it lives at `template/INSTANTIATE.md` in this repo). It is an ordered checklist — GOAL → PERSONA → METHODOLOGY → guardrail → agents → iterate command → run mechanism — with a glossary of every `{{TOKEN}}` and what it means.
@@ -151,7 +151,7 @@ A syntax check does not prove the floors fire. The worked example ships `eval/te
 The loop searches a catalog of named prompting techniques (few-shot, chain-of-thought, decomposition, etc.) for the best-generalizing one on a support-message triage task. It runs offline with no API key required.
 
 ```bash
-cd loop-engine/examples/prompt-technique-tournament
+cd examples/prompt-technique-tournament
 
 # Score any technique
 python eval/run_eval.py --technique few_shot --split dev --model mock

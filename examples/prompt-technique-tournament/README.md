@@ -17,7 +17,7 @@ The planted trap — `keyword_rules` — gains +2 cases on dev but +0 on holdout
 ## Run one iteration
 
 ```bash
-cd loop-engine/examples/prompt-technique-tournament
+cd examples/prompt-technique-tournament
 claude          # opens Claude Code in this directory
 ```
 
