@@ -11,7 +11,7 @@ if printf '%s' "$cmd" | grep -Eq '>[[:space:]]*.*cases/holdout\.jsonl|--model[[:
   exit 2
 fi
 
-# Floor 2 — MACHINE SAFETY (do not weaken; see task-6-brief.md for provenance). /dev/null stays
+# Floor 2 — MACHINE SAFETY (do not weaken — a destructive/exfiltration deny-list for unattended loops). /dev/null stays
 # allowed; only real block devices are caught.
 if printf '%s' "$cmd" | grep -Eq 'rm[[:space:]]+-[A-Za-z]*r[A-Za-z]*f|rm[[:space:]]+-[A-Za-z]*f[A-Za-z]*r|rm[[:space:]]+-r[A-Za-z]*[[:space:]]+-f|rm[[:space:]]+-f[A-Za-z]*[[:space:]]+-r|\bsudo\b|git[[:space:]]+reset[[:space:]]+--hard|\bmkfs\b|\bdd[[:space:]]+if=|>[[:space:]]*/dev/(disk|rdisk|sd|nvme|hd)|\|[[:space:]]*(sh|bash|zsh)([[:space:]]|$)|(curl|wget)[[:space:]].*\|[[:space:]]*(sh|bash|zsh)'; then
   echo "BLOCKED: non-destructive floor — refusing a destructive/exfiltration command ('$cmd')." >&2

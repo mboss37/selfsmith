@@ -20,7 +20,7 @@ Default to skepticism. When in doubt, REJECT.
 
 ### Axis 2: Generalization (the core skeptic axis)
 
-- **Holdout reproduction.** Run `python eval/run_eval.py --technique <technique> --split holdout --model mock`. The dev gain must reproduce on holdout: same sign, and at least roughly half the dev improvement in absolute cases. A technique that adds +3 on dev but +0 on holdout is the planted trap — reject it.
+- **Holdout reproduction.** Run `python eval/run_eval.py --technique <technique> --split holdout --model mock`. The dev gain must reproduce on holdout: same sign, and at least roughly half the dev improvement in absolute cases. A technique that adds +2 on dev but +0 on holdout is the planted trap — reject it.
 - **Noise floor.** With n=20, a gain of fewer than 2 cases is within noise. Reject if the holdout gain is <2 cases above the current champion's holdout score.
 - **Redundancy check.** For combos: does each added technique beyond the current champion resolve cases the champion doesn't? If `self_critique` adds 0 cases the champion's `chain_of_thought` didn't already solve, the technique is redundant — reject the combo (but note the individual technique may be worth cataloging as redundant for the leaderboard).
 - **Measurement integrity.** Same eval instrumentation, same split, no silent changes to `run_eval.py` that could inflate scores.

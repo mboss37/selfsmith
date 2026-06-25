@@ -57,7 +57,7 @@ A challenger replaces the current champion **only if ALL of the following hold**
 
 1. **Dev gain is real.** The challenger's dev pass-rate beats the champion's dev pass-rate by at least 2 cases (above the n=20 noise floor).
 
-2. **Holdout reproduction.** `python eval/run_eval.py --technique <challenger> --split holdout --model mock` shows the same sign of gain, with at least roughly half the dev improvement in absolute cases. A technique that adds +4 on dev but +0 on holdout is an overfit — reject it.
+2. **Holdout reproduction.** `python eval/run_eval.py --technique <challenger> --split holdout --model mock` shows the same sign of gain, with at least roughly half the dev improvement in absolute cases. A technique that adds +2 on dev but +0 on holdout is an overfit — reject it.
 
 3. **Non-redundancy (for combos).** Each technique added beyond the current champion resolves at least one holdout case the champion does not. If a technique adds zero holdout cases the champion doesn't already solve, it is redundant — reject the combo.
 
@@ -65,4 +65,4 @@ A challenger replaces the current champion **only if ALL of the following hold**
 
 **On Wilson CIs:** The harness reports Wilson 95% CIs for every scored technique. At n=20, genuine improvements often produce overlapping intervals — a gain from 7/20 to 11/20 (35% → 55%) is real and meaningful, but the intervals overlap. Treating overlapping CIs as "no edge" would cause Type-II errors on every genuine improvement at this sample size. The promote test is reproduction-on-holdout, not non-overlapping CIs. CIs are there so you can see the uncertainty honestly, not to gate promotion.
 
-The gate agent (`eval/.claude/agents/gate.md`) runs these checks independently. Its verdict is binding — the orchestrator cannot override a REJECT.
+The gate agent (`.claude/agents/gate.md`) runs these checks independently. Its verdict is binding — the orchestrator cannot override a REJECT.

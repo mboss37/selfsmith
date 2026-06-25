@@ -20,5 +20,5 @@ the promote test (two genuine-but-overlapping intervals would wrongly read as "n
 
 **Read this:** `keyword_rules` topped a naive dev-only ranking but **did not reproduce on the
 holdout** — the planted trap, caught. The converged champion stacks three techniques whose
-gains each generalize; `self_critique` was left out because it solved nothing
+gains each generalize; `self_critique` was left out because it solved nothing that
 `chain_of_thought` didn't.

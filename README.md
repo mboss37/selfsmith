@@ -143,7 +143,7 @@ cd loop-engine/examples/prompt-technique-tournament
 # Score any technique
 python eval/run_eval.py --technique few_shot --split dev --model mock
 
-# Run all harness tests (33 expected)
+# Run all harness tests (the full suite passes)
 python -m pytest eval/ -q
 
 # Open Claude Code and run one iteration
