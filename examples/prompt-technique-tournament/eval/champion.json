@@ -1,0 +1,6 @@
+{
+  "champion": "zero_shot",
+  "dev": {"passes": 7, "n": 20, "pass_rate": 0.35},
+  "holdout": {"passes": 7, "n": 20, "pass_rate": 0.35},
+  "history": ["zero_shot (baseline) — dev 35% / holdout 35%"]
+}
