@@ -51,19 +51,36 @@ tool_name="$(printf '%s' "$parsed" | sed -n '2p')"
 cmd="$(printf '%s' "$parsed" | sed -n '3p')"
 file_path="$(printf '%s' "$parsed" | sed -n '4p')"
 
+# PROTECTED PATHS — the loop must never edit its own floor or a domain-sacred file. ALWAYS
+# .claude/hooks/ and .claude/settings.json; {{PROTECTED_PATHS}} is an ERE alternation of the
+# domain paths the loop must never write via any tool (e.g. a sacred holdout) — fill it in from
+# INSTANTIATE.md; if your domain has none, set it to a never-match token (e.g. __NO_PROTECTED__).
+# NOTE: .claude/agents/ and .claude/commands/ are deliberately NOT protected — the meta-improver
+# edits those by design.
+PROTECTED_PATHS='\.claude/hooks/|\.claude/settings\.json|{{PROTECTED_PATHS}}'
+# A write verb in a Bash command (mirrors the write-tool gate so a redirect can't do what an
+# Edit cannot): >/>> redirection (covers the `: >` empty-truncate form), tee, cp, mv, install,
+# sed -i, dd … of=, truncate, and a python open() write.
+WRITE_VERBS='>|tee[[:space:]]|tee$|\bcp\b|\bmv\b|\binstall\b|sed[[:space:]]+-i|dd[[:space:]]+.*of=|\btruncate\b|python[[:space:]].*-c.*open'
+
 # WRITE-TOOL PROTECTION — the architectural fix. A Bash-only deny-list is moot if the loop can
-# just Edit/Write the deny-list (or overwrite a sacred file). For Edit|Write|MultiEdit, block
-# any write into a protected path. .claude/hooks/ and .claude/settings.json are ALWAYS protected
-# so the loop can never edit its own floor. {{PROTECTED_PATHS}} is an ERE alternation of the
-# domain paths the loop must never edit via a file tool (e.g. a sacred holdout) — fill it in
-# from INSTANTIATE.md; if your domain has none, set it to a never-match like (?!) or remove the
-# trailing alternation by hand.
-if printf '%s' "$tool_name" | grep -Eq '^(Edit|Write|MultiEdit)$'; then
-  if printf '%s' "$file_path" | grep -Eq '\.claude/hooks/|\.claude/settings\.json|{{PROTECTED_PATHS}}'; then
+# just Edit/Write the deny-list (or overwrite a sacred file). For Edit|Write|MultiEdit|NotebookEdit,
+# block any write into a protected path.
+if printf '%s' "$tool_name" | grep -Eq '^(Edit|Write|MultiEdit|NotebookEdit)$'; then
+  if printf '%s' "$file_path" | grep -Eq "$PROTECTED_PATHS"; then
     echo "BLOCKED: write-tool floor — refusing to edit a protected path ('$file_path'). Edit .claude/hooks/guardrail.sh by hand to change this floor." >&2
     exit 2
   fi
   exit 0
+fi
+
+# BASH-SIDE PROTECTED-PATH WRITE — parity with the write-tool gate. A redirect/cp/tee/sed -i into
+# a protected path is a write the Edit gate would refuse; refuse it here too. Two-condition match
+# (protected path referenced AND a write verb present) — order-independent and fail-safe. Reading
+# a protected path with no write verb (e.g. `cat .claude/hooks/guardrail.sh`) stays ALLOWED.
+if printf '%s' "$cmd" | grep -Eq "$PROTECTED_PATHS" && printf '%s' "$cmd" | grep -Eq "$WRITE_VERBS"; then
+  echo "BLOCKED: protected-path floor — refusing to write a protected path via Bash ('$cmd'). Edit .claude/hooks/guardrail.sh by hand to change this floor." >&2
+  exit 2
 fi
 
 # Floor 1 — DOMAIN SAFETY (Bash). Replace {{DOMAIN_FORBIDDEN_PATTERN}} with your domain's "never

@@ -73,12 +73,29 @@ BLOCK_FLOOR1 = [
     ("model_claude_equals", "python eval/run_eval.py --split dev --model=claude"),
 ]
 
+# --- MUST BLOCK: Bash redirect/write into a PROTECTED FLOOR FILE (parity with write-tool gate) -
+# A redirect/cp/tee/sed -i into .claude/hooks/ or .claude/settings.json is a write the Edit gate
+# refuses; the Bash branch must refuse it too, or the loop could rewrite its own floor via shell.
+BLOCK_FLOOR_WRITE = [
+    ("floor_echo_redirect_hook", "echo x > .claude/hooks/guardrail.sh"),
+    ("floor_cp_hook", "cp /tmp/e .claude/hooks/guardrail.sh"),
+    ("floor_sed_inplace_hook", "sed -i s/a/b/ .claude/hooks/guardrail.sh"),
+    ("floor_tee_settings", "echo x | tee .claude/settings.json"),
+    ("floor_empty_truncate_hook", ": > .claude/hooks/guardrail.sh"),
+    ("floor_printf_append_settings", "printf x >> .claude/settings.json"),
+    ("floor_mv_hook", "mv /tmp/e .claude/hooks/guardrail.sh"),
+    ("floor_install_settings", "install /tmp/e .claude/settings.json"),
+    ("floor_truncate_hook", "truncate -s 0 .claude/hooks/guardrail.sh"),
+    ("floor_dd_of_hook", "dd if=/tmp/e of=.claude/hooks/guardrail.sh"),
+]
+
 # --- MUST BLOCK: write-tool protection — the architectural fix -------------------------------
 BLOCK_WRITE = [
     ("write_hook", "Write", ".claude/hooks/guardrail.sh"),
     ("write_hook_abs", "Write", "/repo/.claude/hooks/guardrail.sh"),
     ("edit_hook", "Edit", ".claude/hooks/guardrail.sh"),
     ("multiedit_hook", "MultiEdit", ".claude/hooks/guardrail.sh"),
+    ("notebookedit_hook", "NotebookEdit", ".claude/hooks/guardrail.sh"),
     ("write_settings", "Write", ".claude/settings.json"),
     ("edit_settings", "Edit", ".claude/settings.json"),
     ("write_holdout", "Write", "eval/cases/holdout.jsonl"),
@@ -108,6 +125,8 @@ ALLOW_BASH = [
     ("git_checkout_branch", "git checkout main"),
     ("rm_plain_file", "rm scratch.txt"),
     ("read_holdout_ok", "wc -l eval/cases/holdout.jsonl"),
+    ("redirect_normal_path", "echo x > eval/prompt.txt"),
+    ("read_floor_file_ok", "cat .claude/hooks/guardrail.sh"),
 ]
 ALLOW_WRITE = [
     ("write_prompt", "Write", "eval/prompt.txt"),
@@ -117,7 +136,10 @@ ALLOW_WRITE = [
 ]
 
 
-@pytest.mark.parametrize("name,command", BLOCK_BASH + BLOCK_FLOOR1, ids=[c[0] for c in BLOCK_BASH + BLOCK_FLOOR1])
+_BLOCK_BASH_ALL = BLOCK_BASH + BLOCK_FLOOR1 + BLOCK_FLOOR_WRITE
+
+
+@pytest.mark.parametrize("name,command", _BLOCK_BASH_ALL, ids=[c[0] for c in _BLOCK_BASH_ALL])
 def test_bash_must_block(name, command):
     assert _run(_bash(command)) == 2, f"{name!r} should be BLOCKED (exit 2)"
 
