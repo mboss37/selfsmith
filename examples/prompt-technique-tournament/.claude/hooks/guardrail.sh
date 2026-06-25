@@ -1,19 +1,82 @@
 #!/usr/bin/env bash
-# PreToolUse guardrail for the self-improvement loop (Bash tool). Two floors the loop cannot
-# lift on its own — exit 2 blocks the call. A human edits this file by hand to change a floor;
-# the loop must not (and the `gate` vetoes any change that weakens a safeguard).
-input="$(cat)"
-cmd="$(printf '%s' "$input" | python3 -c 'import sys,json; print((json.load(sys.stdin).get("tool_input") or {}).get("command",""))' 2>/dev/null || true)"
+# PreToolUse guardrail for the self-improvement loop. Two floors the loop cannot lift on its
+# own — exit 2 blocks the call. A human edits this file by hand to change a floor; the loop
+# must not (and the `gate` vetoes any change that weakens a safeguard).
+#
+# Wired for Bash AND the write tools (Edit|Write|MultiEdit) — see .claude/settings.json. A
+# deny-list cannot protect itself if the loop can simply edit the deny-list, so write tools
+# are gated against the protected paths below. The deny-list is also INHERENTLY INCOMPLETE
+# (shell quoting can evade any pattern); it is a tripwire, not a jail. The real boundary for
+# unattended runs is an OS sandbox that denies the syscalls — run the loop inside one.
+#
+# This hook FAILS CLOSED: if stdin cannot be parsed into a usable field, it blocks (exit 2).
 
-# Floor 1 — DOMAIN SAFETY. Blocks holdout mutation and paid model calls.
-if printf '%s' "$cmd" | grep -Eq '>[[:space:]]*.*cases/holdout\.jsonl|--model[[:space:]]+claude'; then
-  echo "BLOCKED: domain-safety floor — refusing to mutate the sacred holdout or enable paid model calls ('$cmd')." >&2
+input="$(cat)"
+
+# Parse tool_name, command (lists joined to a string), and file_path in one pass. On ANY
+# parse failure emit "FAIL" so the shell blocks below — never fall through to allow.
+parsed="$(printf '%s' "$input" | python3 -c '
+import sys, json
+try:
+    obj = json.load(sys.stdin)
+    if not isinstance(obj, dict):
+        raise ValueError("top-level not an object")
+    ti = obj.get("tool_input")
+    if ti is None:
+        ti = {}
+    if not isinstance(ti, dict):
+        raise ValueError("tool_input present but not an object")
+    name = obj.get("tool_name") or ""
+    cmd = ti.get("command", "")
+    if isinstance(cmd, list):
+        cmd = " ".join(str(x) for x in cmd)
+    fp = ti.get("file_path") or ti.get("filePath") or ti.get("path") or ""
+    if isinstance(fp, list):
+        fp = " ".join(str(x) for x in fp)
+    if not (str(name) or str(cmd) or str(fp)):
+        raise ValueError("no usable field")
+    print("OK")
+    print(str(name))
+    print(str(cmd))
+    print(str(fp))
+except Exception:
+    print("FAIL")
+' 2>/dev/null || printf "FAIL\n")"
+
+if [ "$(printf '%s' "$parsed" | sed -n '1p')" != "OK" ]; then
+  echo "BLOCKED: guardrail could not parse the tool call — failing closed (exit 2)." >&2
+  exit 2
+fi
+tool_name="$(printf '%s' "$parsed" | sed -n '2p')"
+cmd="$(printf '%s' "$parsed" | sed -n '3p')"
+file_path="$(printf '%s' "$parsed" | sed -n '4p')"
+
+# WRITE-TOOL PROTECTION — the architectural fix. A Bash-only deny-list is moot if the loop can
+# just Edit/Write the deny-list (or overwrite the sacred holdout). For Edit|Write|MultiEdit,
+# block any write into a protected path. .claude/hooks/ and .claude/settings.json are ALWAYS
+# protected so the loop can never edit its own floor; the holdout is the domain-protected file.
+if printf '%s' "$tool_name" | grep -Eq '^(Edit|Write|MultiEdit)$'; then
+  if printf '%s' "$file_path" | grep -Eq '\.claude/hooks/|\.claude/settings\.json|cases/holdout\.jsonl'; then
+    echo "BLOCKED: write-tool floor — refusing to edit a protected path ('$file_path'). Edit .claude/hooks/guardrail.sh by hand to change this floor." >&2
+    exit 2
+  fi
+  exit 0
+fi
+
+# Floor 1 — DOMAIN SAFETY (Bash). Blocks holdout mutation (via ANY write verb) and paid model
+# calls. The holdout is the one honest judge; the loop must never write to it or spend real money.
+if printf '%s' "$cmd" | grep -Eq 'cases/holdout\.jsonl' && printf '%s' "$cmd" | grep -Eq '>[[:space:]]*|>>[[:space:]]*|\btee\b|\bcp\b|\bmv\b|sed[[:space:]]+-i|python[[:space:]].*-c.*open'; then
+  echo "BLOCKED: domain-safety floor — refusing to mutate the sacred holdout ('$cmd'). Edit .claude/hooks/guardrail.sh to change this floor." >&2
+  exit 2
+fi
+if printf '%s' "$cmd" | grep -Eq '\-\-model[=[:space:]]+claude'; then
+  echo "BLOCKED: domain-safety floor — refusing to enable paid model calls ('$cmd'). Edit .claude/hooks/guardrail.sh to change this floor." >&2
   exit 2
 fi
 
 # Floor 2 — MACHINE SAFETY (do not weaken — a destructive/exfiltration deny-list for unattended loops). /dev/null stays
 # allowed; only real block devices are caught.
-if printf '%s' "$cmd" | grep -Eq 'rm[[:space:]]+-[A-Za-z]*r[A-Za-z]*f|rm[[:space:]]+-[A-Za-z]*f[A-Za-z]*r|rm[[:space:]]+-r[A-Za-z]*[[:space:]]+-f|rm[[:space:]]+-f[A-Za-z]*[[:space:]]+-r|\bsudo\b|git[[:space:]]+reset[[:space:]]+--hard|\bmkfs\b|\bdd[[:space:]]+if=|>[[:space:]]*/dev/(disk|rdisk|sd|nvme|hd)|\|[[:space:]]*(sh|bash|zsh)([[:space:]]|$)|(curl|wget)[[:space:]].*\|[[:space:]]*(sh|bash|zsh)'; then
+if printf '%s' "$cmd" | grep -Eq 'rm[[:space:]]+-[A-Za-z]*r[A-Za-z]*f|rm[[:space:]]+-[A-Za-z]*f[A-Za-z]*r|rm[[:space:]]+-r[A-Za-z]*[[:space:]]+-f|rm[[:space:]]+-f[A-Za-z]*[[:space:]]+-r|rm[[:space:]]+.*--recursive|rm[[:space:]]+.*--force|find[[:space:]]+.*-delete|chmod[[:space:]]+.*(-[A-Za-z]*R|--recursive|777)|\bsudo\b|git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+.*\bpush\b.*(--force|[[:space:]]-[A-Za-z]*f)|git[[:space:]]+clean[[:space:]]+.*-[A-Za-z]*f|git[[:space:]]+branch[[:space:]]+.*-D([[:space:]]|$)|git[[:space:]]+checkout[[:space:]]+--[[:space:]]|\bmkfs\b|\bdd[[:space:]]+if=|of=/dev/(disk|rdisk|sd|nvme|hd)|>[[:space:]]*/dev/(disk|rdisk|sd|nvme|hd)|(tee|cp|mv)[[:space:]]+.*/dev/(disk|rdisk|sd|nvme|hd)|\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&|\|[[:space:]]*(sh|bash|zsh)([[:space:]]|$)|(curl|wget)[[:space:]].*\|[[:space:]]*(sh|bash|zsh)'; then
   echo "BLOCKED: non-destructive floor — refusing a destructive/exfiltration command ('$cmd')." >&2
   exit 2
 fi

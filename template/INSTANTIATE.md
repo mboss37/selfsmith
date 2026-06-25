@@ -46,9 +46,15 @@ Open `.claude/hooks/guardrail.sh`:
 
 - [ ] Replace `{{DOMAIN_FORBIDDEN_PATTERN}}` with the ERE pattern that matches your domain's
   "never do this" commands (e.g. `enable_live|--real-money|mutate.*holdout`)
+- [ ] Replace `{{PROTECTED_PATHS}}` with an ERE alternation of the domain paths the loop must
+  never edit via a file tool (Edit/Write/MultiEdit) — e.g. a sacred holdout: `cases/holdout\.jsonl`.
+  `.claude/hooks/` and `.claude/settings.json` are ALWAYS protected (the loop can never edit its
+  own floor); `{{PROTECTED_PATHS}}` adds your domain's untouchable files on top. If your domain
+  has none, replace it with a never-match token (e.g. `__NO_PROTECTED_PATHS__`) — do not leave
+  the literal `{{PROTECTED_PATHS}}` in place.
 - [ ] Test: `bash -n .claude/hooks/guardrail.sh` must exit 0
-- [ ] If your domain has no Floor-1 concern, delete only the Floor 1 block — **leave Floor 2
-  untouched**
+- [ ] If your domain has no Floor-1 concern, delete only the Floor 1 block — **leave Floor 2 and
+  the write-tool protection untouched** (Floor 2 is a machine-safety deny-list; do not weaken it)
 
 ### Step 5 — Customize the five agents
 
@@ -105,6 +111,7 @@ Every `{{TOKEN}}` used anywhere in this template, with a one-line meaning.
 | `{{DONE_DEFINITION}}` | The condition under which the loop should stop iterating |
 | `{{DOMAIN_SAFETY_FLOOR}}` | Hard constraints the loop must never violate — enforced by guardrail Floor 1 |
 | `{{DOMAIN_FORBIDDEN_PATTERN}}` | ERE regex in guardrail.sh Floor 1 matching commands the loop must never run |
+| `{{PROTECTED_PATHS}}` | ERE alternation of domain paths the loop must never edit via a file tool (Edit/Write/MultiEdit) — e.g. a sacred holdout. Sits on top of the always-protected `.claude/hooks/` and `.claude/settings.json` |
 | `{{VERIFY_COMMAND}}` | Shell command that must exit 0 before any change is accepted (lint, tests, etc.) |
 | `{{PROVE_COMMAND}}` | Shell command that produces the measurable metric proving an improvement occurred |
 | `{{LOG_FILE}}` | Relative path to the append-only iteration log (e.g. `LOG.md`) |
