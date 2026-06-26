@@ -155,9 +155,9 @@ chmod +x run-iteration.sh                       # once
 0 * * * * cd /path/to/my-loop && ./run-iteration.sh
 ```
 
-Prefer your platform's native scheduler if you like — **launchd** (macOS), a **systemd timer** (Linux), or **Task Scheduler** via WSL (Windows). Each just runs `run-iteration.sh` on a timer. Override the per-iteration ceiling with `ITER_TIMEOUT` (default `50m`).
+Prefer your platform's native scheduler if you like — **launchd** (macOS), a **systemd timer** (Linux), or **Task Scheduler** via WSL (Windows). Each just runs `run-iteration.sh` on a timer. Override the per-iteration ceiling with `ITER_TIMEOUT` (default `50m`). The time-box needs GNU `timeout` (or `gtimeout`); stock macOS ships neither until you `brew install coreutils`, and without one the single-flight lock still holds but there is **no per-iteration ceiling** — the wrapper says so on stderr.
 
-The wrapper handles overlap and timeouts. It does **not** sandbox — that is still on you: run it inside an OS sandbox, a container, or an unprivileged user where destructive syscalls are impossible, and optionally `chmod 0444` the guardrail and settings files. The deny-list is a tripwire, not a jail.
+The wrapper handles overlap and timeouts. It does **not** sandbox — that is still on you, and it is the real boundary: the guardrail deny-list is a **tripwire for honest mistakes, not a jail** (shell quoting, encoding, and command substitution evade any string match). For genuinely safe unattended runs, launch the wrapper inside an **OS sandbox** (macOS Sandbox, Linux namespaces, or a container with a minimal filesystem) or an unprivileged user where destructive syscalls are impossible at the OS level, and optionally `chmod 0444` the guardrail and settings files.
 
 Before running unattended, confirm the guardrail actually blocks what it should — not just that the script parses:
 ```bash

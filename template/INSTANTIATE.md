@@ -88,8 +88,10 @@ Choose how the loop runs:
 - [ ] **Unattended (any OS)** — schedule the bundled `run-iteration.sh` (NOT raw `claude`) on a
   timer: POSIX cron, launchd (macOS), a systemd timer (Linux), or Task Scheduler via WSL
   (Windows). Each tick is a fresh session (`claude -p`, no `--continue` — disk is the loop's
-  memory); the wrapper takes a single-flight lock and time-boxes the run. Sandbox it for safe
-  unattended use. Make it executable once: `chmod +x run-iteration.sh`.
+  memory); the wrapper takes a single-flight lock and time-boxes the run. The time-box needs GNU
+  `timeout`/`gtimeout` (stock macOS has neither until `brew install coreutils`); without it the
+  lock still holds but there is no per-iteration ceiling. Sandbox it for safe unattended use.
+  Make it executable once: `chmod +x run-iteration.sh`.
 
 Verify the hook is active before running unattended:
 ```bash
