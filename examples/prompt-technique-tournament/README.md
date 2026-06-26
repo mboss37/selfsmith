@@ -55,7 +55,7 @@ python eval/run_eval.py --technique keyword_rules --split holdout
 Run all harness tests:
 
 ```bash
-python -m pytest eval/ -q   # expects 33 passed
+python -m pytest eval/ -q   # expects all green
 ```
 
 ## The split discipline

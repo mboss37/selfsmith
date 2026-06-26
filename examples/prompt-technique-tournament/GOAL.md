@@ -24,7 +24,7 @@ Find the prompting technique (or minimal combo) that best solves support-message
 
 ## Acceptance criteria
 
-- `python -m pytest eval/ -q` passes (33 tests green).
+- `python -m pytest eval/ -q` passes (all tests green).
 - The go/no-go gate approves the challenger.
 - The new champion beats the prior champion on dev by at least 2 cases AND the gain reproduces on holdout (same sign, magnitude above the noise floor).
 - The champion has survived at least one honest challenger that lost — confirming the holdout gate is biting.

@@ -2,8 +2,7 @@
 
 > A self-improving loop that forges itself, one tested change at a time.
 
-<!-- Replace OWNER with your GitHub username after creating the repo -->
-![CI](https://github.com/OWNER/selfsmith/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/mboss37/selfsmith/actions/workflows/ci.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A reusable, domain-agnostic self-improvement loop, extracted from a production Claude Code harness and hardened to run unattended without (a) fooling itself or (b) wrecking the machine.
