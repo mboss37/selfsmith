@@ -29,7 +29,7 @@ The loop is a Claude Code **slash command**. Open Claude Code **in the loop's di
 /loop 1h /iterate     # run CONTINUOUSLY — one iteration every hour (pick any interval)
 ```
 
-`/iterate` shows up in the `/` menu automatically — it's defined in `.claude/commands/iterate.md`. For hands-off runs, schedule `claude --continue -p "/iterate"` on a cron. New here? Copy `template/`, fill the blanks per `INSTANTIATE.md`, then trigger as above.
+`/iterate` shows up in the `/` menu automatically — it's defined in `.claude/commands/iterate.md`. For hands-off runs, schedule the bundled `run-iteration.sh` on a timer (cron, launchd, or a systemd timer). New here? Copy `template/`, fill the blanks per `INSTANTIATE.md`, then trigger as above.
 
 ---
 
@@ -144,11 +144,20 @@ claude          # open Claude Code in the loop directory
 ```
 With an interval, `/loop` repeats at that fixed cadence (`1h` = hourly). Omit the interval and the model decides when to run the next iteration.
 
-**Unattended (cron or launchd):**
+**Unattended (any OS):**
+
+Schedule the bundled `run-iteration.sh` — never raw `claude`. Each tick is a **fresh session** (`claude -p`, no `--continue`: the loop's memory is on disk — `LOG.md`, champion state, git — so every run re-grounds from truth). The wrapper takes a **single-flight lock** so iterations never overlap, and **time-boxes** each run so a wedged iteration is killed, not left spinning.
+
 ```bash
-# Add to crontab (runs every hour, resumes the same session):
-0 * * * * cd /path/to/my-loop && claude --continue -p "/iterate"
+chmod +x run-iteration.sh                       # once
+
+# POSIX cron (Linux, macOS, WSL) — every hour:
+0 * * * * cd /path/to/my-loop && ./run-iteration.sh
 ```
+
+Prefer your platform's native scheduler if you like — **launchd** (macOS), a **systemd timer** (Linux), or **Task Scheduler** via WSL (Windows). Each just runs `run-iteration.sh` on a timer. Override the per-iteration ceiling with `ITER_TIMEOUT` (default `50m`).
+
+The wrapper handles overlap and timeouts. It does **not** sandbox — that is still on you: run it inside an OS sandbox, a container, or an unprivileged user where destructive syscalls are impossible, and optionally `chmod 0444` the guardrail and settings files. The deny-list is a tripwire, not a jail.
 
 Before running unattended, confirm the guardrail actually blocks what it should — not just that the script parses:
 ```bash
