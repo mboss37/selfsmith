@@ -85,8 +85,11 @@ Choose how the loop runs:
 
 - [ ] **Manual one-shot** — run `/iterate` from within a Claude Code session
 - [ ] **Session loop** — run `/loop 1h /iterate` to repeat on a timer within the session
-- [ ] **Unattended cron** — schedule `claude --continue -p "/iterate"` via cron or a
-  system service (see your OS scheduler docs)
+- [ ] **Unattended (any OS)** — schedule the bundled `run-iteration.sh` (NOT raw `claude`) on a
+  timer: POSIX cron, launchd (macOS), a systemd timer (Linux), or Task Scheduler via WSL
+  (Windows). Each tick is a fresh session (`claude -p`, no `--continue` — disk is the loop's
+  memory); the wrapper takes a single-flight lock and time-boxes the run. Sandbox it for safe
+  unattended use. Make it executable once: `chmod +x run-iteration.sh`.
 
 Verify the hook is active before running unattended:
 ```bash
