@@ -35,3 +35,9 @@ jobs:
         run: |
           grep -q 'Bash|Edit|Write|MultiEdit' template/.claude/settings.json
           grep -q 'Bash|Edit|Write|MultiEdit' examples/prompt-technique-tournament/.claude/settings.json
+      - name: Wrappers parse
+        run: |
+          bash -n template/run-iteration.sh
+          bash -n examples/prompt-technique-tournament/run-iteration.sh
+      - name: Wrapper identical across template + example
+        run: diff template/run-iteration.sh examples/prompt-technique-tournament/run-iteration.sh
