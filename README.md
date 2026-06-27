@@ -157,6 +157,17 @@ chmod +x run-iteration.sh                       # once
 
 Prefer your platform's native scheduler if you like — **launchd** (macOS), a **systemd timer** (Linux), or **Task Scheduler** via WSL (Windows). Each just runs `run-iteration.sh` on a timer. Override the per-iteration ceiling with `ITER_TIMEOUT` (default `50m`). The time-box needs GNU `timeout` (or `gtimeout`); stock macOS ships neither until you `brew install coreutils`, and without one the single-flight lock still holds but there is **no per-iteration ceiling** — the wrapper says so on stderr.
 
+**Run until done (bounded loops):**
+
+For a loop with a finish line — a checklist to complete, a winner to converge on — don't tick on a clock; run iterations **back-to-back until it converges**, then stop. `drive-to-goal.sh` does exactly that: it calls `run-iteration.sh` in series (so each tick is still a fresh, single-flight, time-boxed session) and stops on the first of — a `DONE` marker the loop writes at convergence, a **stall** (no new commit for `STALL_LIMIT` iterations, default 3), or `MAX_ITERS` (default 20).
+
+```bash
+./drive-to-goal.sh                                # run until DONE / stalled / capped
+MAX_ITERS=40 STALL_LIMIT=5 ./drive-to-goal.sh     # override the bounds
+```
+
+**Which mode?** Back-to-back (`drive-to-goal.sh`) for **bounded / convergent** work — go fast to the goal, then stop. A **timer** (cron / launchd / systemd running `run-iteration.sh`) for **ongoing / time-dependent** work — tuning a live system where you *want* spacing so new data accumulates between ticks. Same fresh-session-per-tick discipline either way; only the trigger differs.
+
 The wrapper handles overlap and timeouts. It does **not** sandbox — that is still on you, and it is the real boundary: the guardrail deny-list is a **tripwire for honest mistakes, not a jail** (shell quoting, encoding, and command substitution evade any string match). For genuinely safe unattended runs, launch the wrapper inside an **OS sandbox** (macOS Sandbox, Linux namespaces, or a container with a minimal filesystem) or an unprivileged user where destructive syscalls are impossible at the OS level, and optionally `chmod 0444` the guardrail and settings files.
 
 Before running unattended, confirm the guardrail actually blocks what it should — not just that the script parses:

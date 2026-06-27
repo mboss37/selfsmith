@@ -92,6 +92,12 @@ Choose how the loop runs:
   `timeout`/`gtimeout` (stock macOS has neither until `brew install coreutils`); without it the
   lock still holds but there is no per-iteration ceiling. Sandbox it for safe unattended use.
   Make it executable once: `chmod +x run-iteration.sh`.
+- [ ] **Run until done (bounded loops)** — for a loop with a finish line (a checklist, a winner),
+  run `./drive-to-goal.sh` to fire fresh iterations **back-to-back until it converges**, then stop.
+  It calls `run-iteration.sh` in series and stops on a `DONE` marker, a stall (no commit for
+  `STALL_LIMIT` iterations), or `MAX_ITERS`. For a clean convergence stop, have your `iterate.md`
+  done-step `touch DONE` (the stall guard catches loops that don't). Use back-to-back for
+  bounded/convergent work; use the timer above for ongoing/time-dependent tuning.
 
 Verify the hook is active before running unattended:
 ```bash

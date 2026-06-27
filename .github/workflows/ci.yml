@@ -39,5 +39,9 @@ jobs:
         run: |
           bash -n template/run-iteration.sh
           bash -n examples/prompt-technique-tournament/run-iteration.sh
-      - name: Wrapper identical across template + example
-        run: diff template/run-iteration.sh examples/prompt-technique-tournament/run-iteration.sh
+          bash -n template/drive-to-goal.sh
+          bash -n examples/prompt-technique-tournament/drive-to-goal.sh
+      - name: Runners identical across template + example
+        run: |
+          diff template/run-iteration.sh examples/prompt-technique-tournament/run-iteration.sh
+          diff template/drive-to-goal.sh examples/prompt-technique-tournament/drive-to-goal.sh
