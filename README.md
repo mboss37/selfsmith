@@ -24,7 +24,7 @@ You give this loop something you can measure: a test pass rate, a latency number
 
 1. Looks at how things are doing right now.
 2. Makes exactly one small, reversible change that it thinks will help.
-3. Has a second, skeptical AI try to prove the change is fake, unsafe, or a fluke, using an actual statistics check, not a vibe check.
+3. Hands the change to a second, skeptical agent whose entire job is to try to prove it doesn't actually work, isn't safe, or is a fluke, backed by an actual statistics check, not a guess.
 4. Keeps the change only if it survives that check, and writes down what happened either way, including the times it failed.
 
 Then it does that again next time you run it. Nothing gets promoted unless a skeptic tried to kill it and couldn't.
@@ -35,7 +35,7 @@ pip install -r requirements.txt && python -m pytest sim/ -q   # watch the whole 
 claude                                                        # then type: /iterate
 ```
 
-No API key needed for the examples. They run offline with fake but realistic data.
+No API key needed for the examples. They run offline against simulated data built to behave like the real thing.
 
 ---
 
@@ -58,15 +58,15 @@ No API key needed for the examples. They run offline with fake but realistic dat
 
 ## Why this exists
 
-If you just tell an AI "keep improving this in a loop", a few things go wrong in practice, and they go wrong quietly:
+If you just tell an agent "keep improving this in a loop", a few things go wrong in practice, and they go wrong quietly:
 
 - It starts optimizing for the number instead of the thing the number was supposed to measure. A support-triage bot can "improve" by learning a shortcut that works on your test cases and nowhere else. A latency tuner can "improve" by failing fast instead of actually being faster.
-- The AI reviewing its own change is the same AI (or the same kind of reasoning) that made the change, so a plausible-sounding but wrong result talks its way through.
+- The agent reviewing its own change is running the same kind of reasoning that made the change, so a plausible-sounding but wrong result talks its way through.
 - It edits its own safety rules when they get in the way of hitting the number.
 - Once there's nothing real left to improve, it manufactures busywork so it looks productive.
 - An unattended run gets stuck, runs forever, or does something destructive, and nobody notices until later.
 
-Selfsmith is a template that builds a structural answer to each of those, not just a polite instruction asking the AI to please not do that. Here's what backs each one, specifically:
+Selfsmith is a template that builds a structural answer to each of those, not just a polite instruction asking the agent not to do that. Here's what backs each one, specifically:
 
 | What goes wrong | What stops it here |
 |---|---|
@@ -86,7 +86,7 @@ Copy `template/`, fill in a handful of blanks, and you have a working loop for y
 
 ## How it works
 
-One AI role checks the current state and writes a diagnosis. Another proposes and makes exactly one change. A third role, the **gate**, tries to prove that change is wrong, unsafe, or too good to be true. The change only survives if the gate cannot kill it. This is Anthropic's evaluator-optimizer pattern: one side proposes, the other side is paid to disagree.
+One agent checks the current state and writes a diagnosis. Another proposes and makes exactly one change. A third agent, the **gate**, tries to prove that change is wrong, unsafe, or too good to be true. The change only survives if the gate cannot kill it. This is Anthropic's evaluator-optimizer pattern: one agent proposes, another agent's entire job is to try to shoot it down.
 
 ```mermaid
 flowchart LR
@@ -102,7 +102,7 @@ flowchart LR
 Two things make this safe to leave running unattended:
 
 1. **A safety rule the loop physically cannot get around.** Every command and file edit passes through a small script (not a suggestion, an actual gatekeeper) before it runs. That script refuses to let the loop touch its own safety rules or a small list of protected files, and if it can't understand what's being asked, it blocks it rather than guessing. For real unattended use, pair this with an operating-system sandbox; ready-made setups ship in [`template/sandbox/`](template/sandbox/).
-2. **The gate's math is code, not opinion.** A change only counts as "proven" if it passes an actual statistical test in [`tools/verdict.py`](template/tools/verdict.py), the same kind of test a scientist would use to check a result wasn't just luck. An AI reviewer can be talked into believing a good story. A statistics script cannot.
+2. **The gate's math is code, not opinion.** A change only counts as "proven" if it passes an actual statistical test in [`tools/verdict.py`](template/tools/verdict.py), the same kind of test a scientist would use to check a result wasn't just luck. An agent reviewing the change can be talked into believing a good story. A statistics script cannot.
 
 There are two shapes this loop commonly takes, and both ship as complete, working examples:
 
@@ -115,7 +115,7 @@ There are two shapes this loop commonly takes, and both ship as complete, workin
 
 ## The examples
 
-Both examples run offline with realistic, deterministic fake data (no API key, no network calls), and both are the template fully filled in, so you can read them as a reference. Each one also includes a deliberately planted bad result that looks great on the data you'd normally check and fails on the data you're not supposed to peek at. Proving the gate catches it is part of the test suite, not just a claim in this document.
+Both examples run offline against simulated data (no API key, no network calls): synthetic test cases in the tournament, computer-generated traffic patterns in the latency tuner. Both are built with a fixed random seed, so the same run always produces the exact same numbers, and both are the template fully filled in, so you can read them as a reference. Each one also includes a deliberately planted bad result that looks great on the data you'd normally check and fails on the data you're not supposed to peek at. Proving the gate catches it is part of the test suite, not just a claim in this document.
 
 ### 🏆 `prompt-technique-tournament/`: search for the best option
 
@@ -130,7 +130,7 @@ claude   # then: /iterate
 
 - **The planted trap:** one technique scores +2 cases better on the tuning data and +0 on the held-back data. The gate catches and rejects it automatically.
 - **The winner:** a combination of three techniques takes the pass rate from 35% up to 90%, and that result holds up under a strict statistical check against the full set of candidates that were allowed to compete.
-- **Worth knowing:** the data is split three ways (build from one part, tune against a second, check the winner once against a third that's never touched otherwise), and there's an optional switch to run it against a real Claude model instead of the offline fake one. Full details in [its README](examples/prompt-technique-tournament/README.md).
+- **Worth knowing:** the data is split three ways (build from one part, tune against a second, check the winner once against a third that's never touched otherwise), and there's an optional switch to score it with a real Claude model instead of the offline stand-in. Full details in [its README](examples/prompt-technique-tournament/README.md).
 
 ### ⚡ `latency-tuner/`: tune something already running
 
@@ -271,7 +271,7 @@ Two separate layers, and it matters which one you're actually relying on:
 | systemd (Linux) | Strong, no container needed | A hardened service definition with the same restrictions built into the operating system directly |
 | macOS Seatbelt | Good, built into macOS | Blocks all writes except the loop's own folder, and blocks the safety files even there |
 
-The gatekeeper script (layer 1) and the sandbox (layer 2) are hard technical limits. The gate's veto and the loop's own good judgment are not; they're the AI reasoning well, which is valuable but not a guarantee. Before trusting a sandbox, test it: from inside, try to edit the safety files and try to write outside the loop's own folder. Both should fail with a permission error. If you haven't seen it refuse, you don't actually know it works yet.
+The gatekeeper script (layer 1) and the sandbox (layer 2) are hard technical limits. The gate's veto and the loop's own good judgment are not; they rely on the agents reasoning well, which is valuable but not a guarantee. Before trusting a sandbox, test it: from inside, try to edit the safety files and try to write outside the loop's own folder. Both should fail with a permission error. If you haven't seen it refuse, you don't actually know it works yet.
 
 ---
 
@@ -330,7 +330,7 @@ Terms used above, defined once here so the rest of the document doesn't have to 
 | **Fails closed** | If a safety check can't understand or verify something, it blocks the action instead of allowing it through. The opposite, failing open, is what you don't want. |
 | **Holdout** | Data that's set aside and never used to tune against. It only ever gets checked once, to confirm a result that already looked good is real and not a fluke. |
 | **Candidate budget** | How many different options you've committed to trying in a campaign, decided before you start. The more options you try, the more likely one looks good purely by chance, so the statistics check needs to know this number to correct for it. |
-| **Statistical significance test** | A calculation that answers "how likely is it this result happened by chance instead of because the change actually worked?" `verdict.py` runs an actual one of these instead of asking an AI to eyeball the numbers. |
+| **Statistical significance test** | A calculation that answers "how likely is it this result happened by chance instead of because the change actually worked?" `verdict.py` runs an actual one of these instead of asking an agent to eyeball the numbers. |
 | **Reward-hacking** | When something being optimized finds a way to score better without actually getting better at the real task. |
 | **Guardrail / floor** | A hard rule the loop is never allowed to cross, checked mechanically rather than left to judgment. |
 | **Sandbox** | An operating-system-level lockdown where certain actions are physically impossible, not just discouraged. |
@@ -340,7 +340,7 @@ Terms used above, defined once here so the rest of the document doesn't have to 
 ## FAQ
 
 **Do I need an API key?**
-Not for the examples; they run offline with realistic fake data (the tournament example has an optional switch to use a real Claude model instead). Your own loop runs inside your normal Claude Code session or subscription; a scheduled headless run authenticates however your Claude Code CLI already does.
+Not for the examples; they run offline against simulated data (the tournament example has an optional switch to score with a real Claude model instead). Your own loop runs inside your normal Claude Code session or subscription; a scheduled headless run authenticates however your Claude Code CLI already does.
 
 **What does one run cost?**
 A handful of subagent calls. The gate defaults to a stronger model (see the `model:` line in each file under `agents/`), which you can change if you want cheaper runs. Scheduled runs are capped by `ITER_MAX_TURNS` and `ITER_TIMEOUT`, so a run that goes wrong stops instead of spending indefinitely.
