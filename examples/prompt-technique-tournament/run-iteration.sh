@@ -15,7 +15,12 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 LOCK_DIR=".loop.lock"
-TIMEOUT="${ITER_TIMEOUT:-50m}"   # per-iteration ceiling; override with ITER_TIMEOUT=...
+TIMEOUT="${ITER_TIMEOUT:-50m}"   # per-iteration wall-clock ceiling; override with ITER_TIMEOUT=...
+MAX_TURNS="${ITER_MAX_TURNS:-50}"  # per-iteration agent-turn ceiling — the token/cost budget.
+                                   # An unattended loop needs a spend floor it cannot argue past,
+                                   # exactly like the safety floor: a wedged or over-eager iteration
+                                   # is cut off mechanically, not by its own judgment. Raise it
+                                   # deliberately (ITER_MAX_TURNS=80) rather than removing it.
 
 # single-flight: mkdir is atomic on POSIX. If the lock exists but its owner is dead (a previous
 # run was hard-killed), reclaim it; otherwise skip this tick cleanly.
@@ -45,7 +50,7 @@ fi
 # fresh session every tick — NO --continue (disk is the loop's memory).
 # bash 3.x (macOS default) treats "${TO[@]}" as unbound when TO=(); check length first.
 if [ "${#TO[@]}" -gt 0 ]; then
-  "${TO[@]}" claude -p "/iterate"
+  "${TO[@]}" claude -p --max-turns "$MAX_TURNS" "/iterate"
 else
-  claude -p "/iterate"
+  claude -p --max-turns "$MAX_TURNS" "/iterate"
 fi

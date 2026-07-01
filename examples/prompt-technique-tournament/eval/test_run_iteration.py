@@ -44,8 +44,21 @@ def test_runs_fresh_session_not_continue(tmp_path):
     r = _run(tmp_path)
     assert r.returncode == 0, r.stderr
     calls = marker.read_text()
-    assert "-p /iterate" in calls, f"expected a fresh /iterate call, got: {calls!r}"
+    assert "-p " in calls and "/iterate" in calls, f"expected a fresh /iterate call, got: {calls!r}"
     assert "--continue" not in calls, "wrapper must NOT pass --continue (disk is the memory)"
+    assert "--max-turns 50" in calls, "wrapper must apply the default per-iteration turn budget"
+
+
+def test_turn_budget_is_overridable(tmp_path):
+    shutil.copy(WRAPPER, tmp_path / "run-iteration.sh")
+    marker = tmp_path / "calls.txt"
+    _install_stub_claude(tmp_path, marker, sleep=0)
+    r = subprocess.run(
+        ["bash", str(tmp_path / "run-iteration.sh")],
+        env={**_env(tmp_path), "ITER_MAX_TURNS": "80"}, capture_output=True, text=True,
+    )
+    assert r.returncode == 0, r.stderr
+    assert "--max-turns 80" in marker.read_text()
 
 
 def test_single_flight_second_tick_skips(tmp_path):
