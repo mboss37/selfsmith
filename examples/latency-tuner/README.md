@@ -1,14 +1,8 @@
-# Latency tuner: example loop (optimize-a-running-system flavor)
+# Latency tuner: example loop (tune something already running)
 
-A self-improving loop that tunes a running service's retry policy (`config.json`:
-`timeout_ms`, `retries`, `backoff_ms`) against replayed production traffic, and only
-promotes changes that survive an **out-of-time** holdout window. Fully offline and
-deterministic: no API key, no network.
+A self-improving loop that tunes a service's retry settings (`config.json`: how long to wait, how many times to retry, how long to back off between attempts) against realistic replayed traffic, and only keeps a change if it still holds up on newer, worse traffic. Fully offline: no API key, no network calls.
 
-This is the second flavor described in the root README: where the
-[prompt-technique tournament](../prompt-technique-tournament/) *discovers and validates* a
-winner from a candidate catalog, this loop *optimizes a running system*: incremental
-config changes, a time-based holdout, and a hard operational floor.
+New to Selfsmith? The [root README](../../README.md) explains the whole idea in plain terms and has a glossary for any term below that isn't obvious. This example is the "tune something already running" shape described there; the [prompt-technique tournament](../prompt-technique-tournament/) is the "search for the best option" shape.
 
 ## Prerequisites
 
@@ -17,45 +11,37 @@ config changes, a time-based holdout, and a hard operational floor.
 
 ## What this loop does
 
-The seed policy is breaching its SLO (7.3% errors against a 2% budget). Each iteration,
-the loop (`/iterate`):
+The starting settings have a real problem: 7.3% of requests fail, against a 2% budget. Each run (`/iterate`):
 
-1. Evaluates the champion config on the train window (days 1-5).
-2. Proposes ONE knob change with a stated mechanism, and the traffic regime it assumes.
-3. Measures it on train (mean **effective** latency: errors costed at +10,000ms).
-4. Gates it mechanically: `tools/verdict.py compare` (paired bootstrap, deflated by the
-   declared 24-candidate budget), the 2% error floor on BOTH windows, and holdout
-   non-inferiority (days 6-7, where the upstream has degraded and congestion persists).
-5. Logs the result and updates `config.json` only on approval.
+1. Checks how the current settings are doing against the older, healthier traffic.
+2. Proposes changing exactly one setting, with a reason it should help.
+3. Scores that change against the older traffic (the score is "effective latency": how long a request took, with every failure counted as if it took 10 seconds).
+4. Checks the change three ways: does it actually help by more than could be chance, does the error rate stay under budget on both the older and newer traffic, and does it still hold up on the newer, worse traffic.
+5. Writes down the result and updates `config.json`, but only if the change passed every check.
 
-**The planted trap:** `timeout_ms=260, retries=3` tops the train leaderboard (mean
-effective ≈ 320ms vs the honest optimum ≈ 332ms) because train slowness is transient and
-retries escape it. On the holdout window congestion persists across attempts, so the same
-config runs **8.8% errors** (4× the floor) and mean effective 1211ms. The gate must kill
-the best-looking config on the board. The converged champion is
-`timeout 2000 / retries 2 / backoff 0` (train 332ms, holdout 299ms, 0% errors both).
+**The planted trap:** a very short timeout with three retries looks like the best setting on the older traffic (average score about 320ms versus 332ms for the honest winner) because on that traffic, slowdowns are brief and a quick retry usually escapes them. On the newer traffic, slowdowns last longer and a retry usually lands in the middle of the same slowdown instead of escaping it, so that same setting causes 8.8% failures, more than four times the budget. The gate has to catch and reject the best-looking setting on the board, and the test suite proves it does. The setting that actually wins is 2000ms timeout / 2 retries / no backoff delay, scoring 332ms on the older traffic and 299ms on the newer traffic, with zero failures on both.
 
 ## Run the harness directly
 
 ```bash
 cd examples/latency-tuner
 
-# Score the current champion on the train window
+# Score the current setting against the older traffic
 python sim/run_eval.py --config config.json --window train
 
-# Score a candidate without touching config.json
+# Try a different setting without touching config.json
 python sim/run_eval.py --window train --override timeout_ms=260 --override retries=3 --override backoff_ms=20
 
-# Adjudicate on holdout (once per challenger, after a train win; never to explore)
+# Check a candidate against the newer traffic (only do this once, to confirm a winner)
 python sim/run_eval.py --window holdout --override timeout_ms=260 --override retries=3 --override backoff_ms=20
 
-# Dump paired per-request vectors and certify mechanically
+# Save the per-request numbers and run the actual statistics check
 python sim/run_eval.py --window train --dump /tmp/champ.txt
 python sim/run_eval.py --window train --override timeout_ms=260 --override retries=3 --dump /tmp/trap.txt
 python tools/verdict.py compare --champion /tmp/champ.txt --challenger /tmp/trap.txt \
   --search-size 24 --stat mean --direction lower
 
-# Run all harness tests
+# Run everything
 python -m pytest sim/ -q
 ```
 
@@ -64,35 +50,35 @@ python -m pytest sim/ -q
 ```bash
 claude          # open Claude Code in this directory
 # inside the session:
-/iterate              # ONE iteration, manually
-/loop 1h /iterate     # CONTINUOUS, hourly (a timer suits ongoing tuning)
+/iterate              # ONE run, manually
+/loop 1h /iterate     # CONTINUOUS, hourly (a schedule suits this kind of ongoing tuning)
 ```
 
-## The discipline at a glance
+## The rules this example follows, at a glance
 
-| Mechanism | Where |
+| Rule | How it's enforced |
 |---|---|
-| Fixed measurement data | `traces/*.jsonl` are protected paths; `make_traces.py` blocked in-loop (guardrail Floor 1) |
-| Reward-hack countermeasure | effective latency (+10s per error) as headline stat AND a mechanical 2% error floor |
-| Multiple-comparisons discipline | `verdict.py compare --search-size 24` (budget declared in GOAL.md, fixed up front) |
-| Out-of-time validation | holdout = later window, degraded upstream, persistence 0.75 vs train 0.30 |
-| Metric contract | `bash tools/metric-contract.sh` (numeric, deterministic, separating) |
+| The traffic data itself never changes | `traces/*.jsonl` is a protected path; the script that generated it is blocked while the loop is running |
+| Failing fast can't be disguised as an improvement | The score counts every failure as a heavy time penalty, and the failure rate is checked separately no matter what the speed number says |
+| Trying lots of settings doesn't let a lucky one sneak through | The statistics check is told upfront how many settings (24) this campaign is allowed to try, and corrects for that |
+| A setting that only works on the past doesn't get promoted | The newer, worse traffic (days 6-7 versus days 1-5) has to confirm the result before it's kept |
+| The metric itself is trustworthy | `bash tools/metric-contract.sh` confirms it's a plain number, consistent run to run, and can tell good settings from bad ones |
 
 ## Files at a glance
 
 ```
 .claude/
-  commands/iterate.md   # orchestrator (Rae)
-  agents/               # evaluator, proposer, implementer, gate, meta-improver
-  hooks/                # guardrail: blocks trace regeneration/mutation
+  commands/iterate.md   # the orchestrator (goes by "Rae" in this example)
+  agents/                # evaluator, proposer, implementer, gate, meta-improver
+  hooks/                 # the safety script: blocks touching the traffic data
 sim/
-  run_eval.py           # deterministic replay scorer (--window, --override, --dump)
-  make_traces.py        # trace provenance; run ONCE at project start, blocked in-loop
-  test_*.py             # harness, guardrail, verdict, and metric-contract corpora
-traces/                 # train.jsonl (days 1-5), holdout.jsonl (days 6-7): the ruler
-tools/                  # verdict.py (mechanical gate), metric-contract.sh
-config.json             # the SEED policy (2000/0/0, SLO-breaching); the loop walks it forward
-GOAL.md                 # mission, floors, candidate budget, done definition
-METHODOLOGY.md          # window discipline, the physics, go/no-go gate
-LOG.md                  # worked history: promote, trap rejection, promote
+  run_eval.py            # scores a setting against replayed traffic (--window, --override, --dump)
+  make_traces.py         # generated the traffic data once, at the start; blocked while the loop runs
+  test_*.py              # the full test suite covering the harness, the safety script, and the statistics check
+traces/                  # train.jsonl (days 1-5), holdout.jsonl (days 6-7): the fixed traffic data
+tools/                   # verdict.py (the statistics check), metric-contract.sh
+config.json              # the starting settings (2000ms/0 retries/0 backoff, too many failures); the loop walks this forward
+GOAL.md                  # the mission, the hard limits, how many settings this campaign may try, what "done" means
+METHODOLOGY.md           # the data-split rules, why this domain is easy to fool yourself in, and what it takes to promote a winner
+LOG.md                   # a worked example history: one win, one caught trap, one more win
 ```

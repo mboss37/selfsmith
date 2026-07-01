@@ -1,6 +1,8 @@
 # Prompt-technique tournament: example loop
 
-A self-improving loop that runs a tournament over prompting techniques for a fixed use-case (support-message triage) and converges on the technique that generalizes best to **unseen cases**. The harness is offline and deterministic by default; no API key needed.
+A self-improving loop that tests different prompting techniques against a fixed task (sorting support messages into categories) and finds whichever one actually works on messages it hasn't seen before, not just the one that scored best on the messages it practiced on. Runs offline with realistic fake data; no API key needed.
+
+New to Selfsmith? The [root README](../../README.md) explains the whole idea in plain terms and has a glossary for any term below that isn't obvious.
 
 ## Prerequisites
 
@@ -10,15 +12,15 @@ A self-improving loop that runs a tournament over prompting techniques for a fix
 
 ## What this loop does
 
-Each iteration, the loop (`/iterate`):
+Each run (`/iterate`):
 
-1. Evaluates the current champion's dev and holdout scores.
-2. Proposes one technique change (or combo).
-3. Measures it on dev.
-4. Gates it: promotes only if the dev gain reproduces on the **never-tuned holdout** and clears the noise floor.
-5. Logs the result (win or rejection) and updates the champion if approved.
+1. Checks how the current best technique is doing.
+2. Proposes one technique to try, or one combination of techniques.
+3. Scores it against the tuning data.
+4. Decides: the new technique only wins if it also holds up on data that was never used for tuning, and the improvement is big enough to trust.
+5. Writes down what happened, win or loss, and updates the current best technique if it won.
 
-The planted trap, `keyword_rules`, gains +2 cases on dev but +0 on holdout. The gate must catch it. The converged champion is `few_shot+chain_of_thought+decomposition` at 90% dev / 90% holdout.
+There's a deliberately planted bad result in the catalog: a technique called `keyword_rules` scores +2 cases better on the tuning data and +0 better on the data set aside for checking. The gate has to catch that and reject it, and the test suite proves it does. The technique that actually wins is a combination called `few_shot+chain_of_thought+decomposition`, scoring 90% on both the tuning data and the checking data.
 
 ## Run one iteration
 
@@ -30,70 +32,70 @@ claude          # opens Claude Code in this directory
 Inside Claude Code:
 
 ```
-/iterate              # ONE iteration, manually
-/loop 30m /iterate    # CONTINUOUS: one iteration every 30 min (pick any interval)
+/iterate              # ONE run, manually
+/loop 30m /iterate    # CONTINUOUS: one run every 30 minutes (pick any interval)
 ```
 
 The loop is offline by default: no API key, no paid calls, safe to run unattended.
 
 ## Run the harness directly
 
-Score any technique on any split:
+Score any technique against any part of the data:
 
 ```bash
-# Score the champion combo on dev
+# Score the winning combination against the tuning data
 python eval/run_eval.py --technique few_shot+chain_of_thought+decomposition --split dev
 
-# Score it on holdout (do this only to adjudicate, not to iterate)
+# Score it against the held-back checking data (only do this to confirm a winner, not to explore)
 python eval/run_eval.py --technique few_shot+chain_of_thought+decomposition --split holdout
 
-# Test the planted trap
+# Try the planted bad result
 python eval/run_eval.py --technique keyword_rules --split dev
 python eval/run_eval.py --technique keyword_rules --split holdout
 ```
 
-Run all harness tests:
+Run everything:
 
 ```bash
 python -m pytest eval/ -q   # expects all green
 ```
 
-## The split discipline
+## The three-way data split
 
-| Split | Use |
+| Split | Used for |
 |---|---|
-| `train` | Inspect cases, build few-shot example pools. |
-| `dev` | Measure every candidate technique. Working signal. |
-| `holdout` | Adjudicate a challenger only, after it wins on dev. **Never inspect for technique ideas.** |
+| `train` | Building examples, looking at cases, getting a feel for the task. |
+| `dev` | Scoring every candidate technique. This is the working signal. |
+| `holdout` | Confirming a winner, once, after it already won on `dev`. Never used to come up with ideas. |
 
-The holdout is the one honest judge. Iterating against it, even by looking at its cases for inspiration, invalidates the result. The guardrail in `.claude/settings.json` hard-blocks any command that would mutate `holdout.jsonl` inside the loop.
+`holdout` is the one honest check. Looking at it for inspiration, even without formally scoring against it, defeats the whole point, the same way peeking at exam answers while studying does. The safety script in `.claude/settings.json` blocks any command that would edit `holdout.jsonl` while the loop is running, so this isn't just a rule someone has to remember.
 
-## Production seam
+## Running against a real model instead of the offline fake one
 
-By default the harness uses an offline mock model (deterministic, keyed off each case's `_solved_by` metadata; see `eval/task.md`). To run against a real Anthropic model:
+By default the harness uses a fake, deterministic stand-in for a model (its answers are decided by metadata attached to each test case; see `eval/task.md`). To run it against an actual Claude model instead:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 python eval/run_eval.py --technique few_shot+chain_of_thought --split dev --model claude
 ```
 
-`--model claude` calls `claude-haiku-4-5-20251001` via the Anthropic SDK. See the `claude-api` skill for current model IDs, pricing, and SDK usage before changing the model. The loop itself stays on `--model mock` by the guardrail in `.claude/hooks/`; `--model claude` is for one-off human validation only.
+`--model claude` calls `claude-haiku-4-5-20251001` through the Anthropic SDK. Check the `claude-api` skill for current model names and pricing before changing which model it uses. The loop itself is locked to the offline fake model by the safety script in `.claude/hooks/`; `--model claude` is meant for a human to check by hand, not for the loop to use on its own.
 
 ## Files at a glance
 
 ```
 .claude/
-  commands/iterate.md   - orchestrator (Vera)
-  agents/               - evaluator, proposer, implementer, gate, meta-improver
-  hooks/                - guardrail: blocks holdout mutation and paid model calls
+  commands/iterate.md   - the orchestrator (goes by "Vera" in this example)
+  agents/                - evaluator, proposer, implementer, gate, meta-improver
+  hooks/                 - the safety script: blocks editing holdout data or calling a paid model
 eval/
-  run_eval.py           - scorer (--technique, --split, --model)
-  techniques.py         - full technique catalog + renderers
-  cases/                - train.jsonl, dev.jsonl, holdout.jsonl
-  champion.json         - loop's SEED/start state (zero_shot, 35%); the loop walks it forward. The converged champion (few_shot+chain_of_thought+decomposition, 90%) is shown in eval/leaderboard.md
-  leaderboard.md        - full ranked history including rejections
-GOAL.md                 - what "done" looks like
-PERSONA.md              - Vera's principles
-METHODOLOGY.md          - split discipline + go/no-go gate
-LOG.md                  - append-only iteration history
+  run_eval.py            - scores a technique (--technique, --split, --model)
+  techniques.py          - the full catalog of techniques and how each one changes the prompt
+  cases/                 - train.jsonl, dev.jsonl, holdout.jsonl
+  champion.json          - the starting point (zero_shot, 35%); the loop walks this forward over time. The eventual winner (few_shot+chain_of_thought+decomposition, 90%) is recorded in eval/leaderboard.md
+  leaderboard.md         - the full history, including the techniques that lost
+GOAL.md                  - what "done" means for this loop
+PERSONA.md               - Vera's guiding principles
+METHODOLOGY.md           - the data-split rules and what it takes to promote a winner
+LOG.md                   - an append-only diary, one entry per run
 ```
