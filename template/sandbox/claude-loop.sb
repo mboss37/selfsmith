@@ -1,0 +1,31 @@
+;; claude-loop.sb — macOS Seatbelt profile for an unattended selfsmith loop.
+;;
+;; Usage (from the loop root):
+;;   sandbox-exec -f sandbox/claude-loop.sb -D LOOP_DIR="$PWD" -D HOME_DIR="$HOME" ./run-iteration.sh
+;;
+;; Later rules override earlier ones: deny all writes, allow the working set, then
+;; RE-DENY the floor inside the writable loop dir — the loop cannot lift its own floor
+;; even though it can write everywhere else in its directory.
+;;
+;; sandbox-exec is deprecated-but-functional (Apple's own daemons still use the
+;; mechanism). For anything security-critical prefer the container jail (see README.md).
+
+(version 1)
+(allow default)
+
+;; No writes anywhere...
+(deny file-write*)
+
+;; ...except the loop's working set: its own directory, temp, and the home dir
+;; (Claude Code keeps credentials and session state under ~/.claude).
+(allow file-write*
+  (subpath (param "LOOP_DIR"))
+  (subpath (param "HOME_DIR"))
+  (subpath "/private/tmp")
+  (subpath "/private/var/tmp")
+  (subpath "/private/var/folders"))
+
+;; ...and NEVER the floor, even inside the writable loop dir.
+(deny file-write*
+  (subpath (string-append (param "LOOP_DIR") "/.claude/hooks"))
+  (literal (string-append (param "LOOP_DIR") "/.claude/settings.json")))

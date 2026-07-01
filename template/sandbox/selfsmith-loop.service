@@ -1,0 +1,41 @@
+# selfsmith-loop.service — one hardened iteration, driven by selfsmith-loop.timer.
+# Install as a USER unit (no root — a jail with root inside is half a jail):
+#   cp sandbox/selfsmith-loop.{service,timer} ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now selfsmith-loop.timer
+#
+# EDIT BEFORE USE: replace %h/my-loop with your loop directory (three places), and point
+# EnvironmentFile at a 0600 file containing ANTHROPIC_API_KEY=... (or delete the line if
+# the CLI is authenticated another way — note ProtectHome=tmpfs hides ~ except BindPaths).
+
+[Unit]
+Description=Selfsmith self-improvement loop — one iteration
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/my-loop
+ExecStart=%h/my-loop/run-iteration.sh
+EnvironmentFile=%h/my-loop/.loop-secrets.env
+Environment=ITER_TIMEOUT=50m ITER_MAX_TURNS=50
+
+# --- the jail ---
+# Whole OS read-only; home replaced by an empty tmpfs; then bind back ONLY the working set.
+ProtectSystem=strict
+ProtectHome=tmpfs
+BindPaths=%h/my-loop %h/.claude
+# The floor stays read-only even inside the writable loop dir — the loop cannot lift it.
+BindReadOnlyPaths=%h/my-loop/.claude/hooks %h/my-loop/.claude/settings.json
+PrivateTmp=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+# --- the ceilings: a runaway iteration degrades, not the machine ---
+MemoryMax=4G
+TasksMax=256
+CPUQuota=200%
