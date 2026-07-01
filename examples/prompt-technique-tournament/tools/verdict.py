@@ -1,36 +1,36 @@
 #!/usr/bin/env python3
-"""verdict.py — the MECHANICAL half of the gate. stdlib only, deterministic.
+"""verdict.py: the MECHANICAL half of the gate. stdlib only, deterministic.
 
 The gate agent's judgment (safety, mechanism plausibility, redundancy) stays with the
-agent. The certification arithmetic — "is this gain real, after deflating for everything
-that was tried?" — must NOT be left to judgment, because judgment is exactly what a
+agent. The certification arithmetic ("is this gain real, after deflating for everything
+that was tried?") must NOT be left to judgment, because judgment is exactly what a
 plausible-but-wrong gain fools. The gate agent runs this tool and may not promote a
 change this tool rejects. The veto is one-way: verdict.py PROMOTE is necessary, never
-sufficient — the agent can still reject on any axis it checks.
+sufficient; the agent can still reject on any axis it checks.
 
 Modes (each mechanizes a METHODOLOGY.md rule):
 
   screen     Dev-split screening: challenger must beat champion by >= --min-effect
-             items. No significance claim — dev is mined, so dev p-values are theater.
+             items. No significance claim; dev is mined, so dev p-values are theater.
   reproduce  The promote test for small-n discover-and-validate loops: the dev gain
-             must reproduce on the never-tuned holdout — same sign, >= --ratio of the
+             must reproduce on the never-tuned holdout; same sign, >= --ratio of the
              dev gain, >= --min-effect items. (At small n an exact test cannot certify
              small steps; reproduction on untouched data is the honest instrument.)
   confirm    Exact two-sided sign test on paired 0/1 outcomes, alpha Bonferroni-deflated
-             by --search-size (the candidate budget declared UP FRONT — not the running
+             by --search-size (the candidate budget declared UP FRONT; not the running
              log). FAILS CLOSED: no declared search size, no certification. Use for the
              final champion-vs-baseline claim, or per-step in big-n domains.
-  compare    Paired bootstrap (seeded, deterministic) on continuous per-item values —
+  compare    Paired bootstrap (seeded, deterministic) on continuous per-item values:
              CI on the improvement at the deflated alpha; PROMOTE only if the whole CI
              clears zero. --stat mean|p95, --direction higher|lower.
   floor      Hard-floor check: --value must respect --max/--min. For safety floors
              (error rate, cost) so the floor test is arithmetic, not opinion.
   self-test  The known-nothing control, automated: feeds the machinery null and
              clear-win inputs and verifies REJECT/PROMOTE/fail-closed behave. Run it
-             at the start of every gate review — a gate that blesses a null is a bug.
+             at the start of every gate review; a gate that blesses a null is a bug.
 
 Input files: one numeric value per line (paired by line across the two files), or a
-run_eval.py-style JSON object with results[].pass — auto-detected.
+run_eval.py-style JSON object with results[].pass; auto-detected.
 
 Exit codes: 0 PROMOTE/pass · 1 REJECT · 3 fail-closed (bad input / undeclared search).
 """
@@ -44,7 +44,7 @@ FAIL_CLOSED = 3
 
 
 def die(msg):
-    print(f"verdict: FAIL-CLOSED — {msg}", file=sys.stderr)
+    print(f"verdict: FAIL-CLOSED; {msg}", file=sys.stderr)
     sys.exit(FAIL_CLOSED)
 
 
@@ -71,7 +71,7 @@ def load_vector(path):
 def load_pair(a_path, b_path):
     a, b = load_vector(a_path), load_vector(b_path)
     if len(a) != len(b):
-        die(f"vectors differ in length ({len(a)} vs {len(b)}) — pairing is broken")
+        die(f"vectors differ in length ({len(a)} vs {len(b)}); pairing is broken")
     if not a:
         die("vectors are empty")
     return a, b
@@ -79,7 +79,7 @@ def load_pair(a_path, b_path):
 
 def require_search_size(n):
     if n is None:
-        die("--search-size not declared. Every candidate counts — including the ones the "
+        die("--search-size not declared. Every candidate counts; including the ones the "
             "proposer silently evaluated. Declare the candidate budget fixed up front "
             "(see METHODOLOGY.md); no declared size, no certification.")
     if n < 1:
@@ -89,7 +89,7 @@ def require_search_size(n):
 
 def emit(verdict, detail):
     detail["verdict"] = verdict
-    print(f"verdict: {verdict} — {detail.get('reason', '')}")
+    print(f"verdict: {verdict}; {detail.get('reason', '')}")
     print(json.dumps(detail, sort_keys=True))
     sys.exit(0 if verdict == "PROMOTE" else 1)
 
@@ -112,7 +112,7 @@ def mode_screen(args):
     champ, chal = load_pair(args.champion, args.challenger)
     g = gain(champ, chal)
     detail = {"mode": "screen", "n": len(champ), "gain": g, "min_effect": args.min_effect,
-              "reason": f"dev gain {g:+d} vs min effect {args.min_effect} (screen only — no significance claim)"}
+              "reason": f"dev gain {g:+d} vs min effect {args.min_effect} (screen only, no significance claim)"}
     emit("PROMOTE" if g >= args.min_effect else "REJECT", detail)
 
 
@@ -133,13 +133,13 @@ def mode_confirm(args):
     champ, chal = load_pair(args.champion, args.challenger)
     bad = [v for v in champ + chal if v not in (0.0, 1.0)]
     if bad:
-        die(f"confirm needs 0/1 outcomes; got {bad[0]} — use `compare` for continuous values")
+        die(f"confirm needs 0/1 outcomes; got {bad[0]}; use `compare` for continuous values")
     wins = sum(1 for a, b in zip(champ, chal) if b > a)
     losses = sum(1 for a, b in zip(champ, chal) if a > b)
     deflated = args.alpha / search
     if wins + losses == 0:
         emit("REJECT", {"mode": "confirm", "wins": 0, "losses": 0, "search_size": search,
-                        "reason": "no discordant pairs — nothing to certify"})
+                        "reason": "no discordant pairs; nothing to certify"})
     p = sign_test_p(wins, losses)
     ok = wins > losses and p <= deflated
     detail = {"mode": "confirm", "n": len(champ), "wins": wins, "losses": losses,
@@ -183,7 +183,7 @@ def mode_compare(args):
               "improvement": round(improvement, 6), "ci": [round(lo, 6), round(hi, 6)],
               "alpha": args.alpha, "search_size": search, "deflated_alpha": round(deflated, 6),
               "resamples": args.resamples, "seed": args.seed,
-              "reason": f"{args.stat} improvement {improvement:+.4g}, CI[{lo:+.4g}, {hi:+.4g}] at deflated alpha {deflated:.4g} — promote only if the whole CI clears zero"}
+              "reason": f"{args.stat} improvement {improvement:+.4g}, CI[{lo:+.4g}, {hi:+.4g}] at deflated alpha {deflated:.4g}; promote only if the whole CI clears zero"}
     emit("PROMOTE" if ok else "REJECT", detail)
 
 
@@ -207,7 +207,7 @@ def mode_self_test(_args):
 
     def check(name, cond):
         checks.append((name, cond))
-        print(f"self-test: {'PASS' if cond else 'FAIL'} — {name}")
+        print(f"self-test: {'PASS' if cond else 'FAIL'}; {name}")
 
     # A null (identical outcomes) must never be certified.
     check("confirm gives a null (0W/0L) p=1", sign_test_p(0, 0) == 1.0)
@@ -231,9 +231,9 @@ def mode_self_test(_args):
         check("undeclared search size fails closed", e.code == FAIL_CLOSED)
     failed = [name for name, ok in checks if not ok]
     if failed:
-        print(f"self-test: FAILED — {failed}", file=sys.stderr)
+        print(f"self-test: FAILED; {failed}", file=sys.stderr)
         sys.exit(FAIL_CLOSED)
-    print(f"self-test: all {len(checks)} checks pass — the gate machinery is live")
+    print(f"self-test: all {len(checks)} checks pass; the gate machinery is live")
     sys.exit(0)
 
 
