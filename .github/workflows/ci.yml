@@ -6,16 +6,21 @@ permissions:
   contents: read
 jobs:
   test:
-    name: Example tests
+    name: Example tests (${{ matrix.example.name }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example:
+          - { name: prompt-technique-tournament, tests: eval/ }
+          - { name: latency-tuner, tests: sim/ }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -r examples/prompt-technique-tournament/requirements.txt
+      - run: pip install -r examples/${{ matrix.example.name }}/requirements.txt
       - name: Run example + guardrail corpus
-        working-directory: examples/prompt-technique-tournament
-        run: python -m pytest eval/ -q --no-header
+        working-directory: examples/${{ matrix.example.name }}
+        run: python -m pytest ${{ matrix.example.tests }} -q --no-header
   guardrail-integrity:
     name: Guardrail integrity
     runs-on: ubuntu-latest
@@ -23,25 +28,48 @@ jobs:
       - uses: actions/checkout@v4
       - name: Hooks parse
         run: |
-          bash -n template/.claude/hooks/guardrail.sh
-          bash -n examples/prompt-technique-tournament/.claude/hooks/guardrail.sh
-      - name: Floor 2 present and identical across template + example
+          for hook in template/.claude/hooks/guardrail.sh \
+                      examples/prompt-technique-tournament/.claude/hooks/guardrail.sh \
+                      examples/latency-tuner/.claude/hooks/guardrail.sh; do
+            bash -n "$hook"
+          done
+      - name: Floor 2 present and identical across template + examples
         run: |
-          grep -qF 'Floor 2 — MACHINE SAFETY' template/.claude/hooks/guardrail.sh
-          grep -qF 'Floor 2 — MACHINE SAFETY' examples/prompt-technique-tournament/.claude/hooks/guardrail.sh
-          diff <(sed -n '/Floor 2/,$p' template/.claude/hooks/guardrail.sh) \
-               <(sed -n '/Floor 2/,$p' examples/prompt-technique-tournament/.claude/hooks/guardrail.sh)
+          for hook in template/.claude/hooks/guardrail.sh \
+                      examples/prompt-technique-tournament/.claude/hooks/guardrail.sh \
+                      examples/latency-tuner/.claude/hooks/guardrail.sh; do
+            grep -qF 'Floor 2 — MACHINE SAFETY' "$hook"
+            diff <(sed -n '/Floor 2/,$p' template/.claude/hooks/guardrail.sh) \
+                 <(sed -n '/Floor 2/,$p' "$hook")
+          done
       - name: Hooks wired for Bash AND write tools
         run: |
-          grep -q 'Bash|Edit|Write|MultiEdit' template/.claude/settings.json
-          grep -q 'Bash|Edit|Write|MultiEdit' examples/prompt-technique-tournament/.claude/settings.json
-      - name: Wrappers parse
+          for settings in template/.claude/settings.json \
+                          examples/prompt-technique-tournament/.claude/settings.json \
+                          examples/latency-tuner/.claude/settings.json; do
+            grep -q 'Bash|Edit|Write|MultiEdit' "$settings"
+          done
+      - name: Wrappers and sandbox runner parse
         run: |
-          bash -n template/run-iteration.sh
-          bash -n examples/prompt-technique-tournament/run-iteration.sh
-          bash -n template/drive-to-goal.sh
-          bash -n examples/prompt-technique-tournament/drive-to-goal.sh
-      - name: Runners identical across template + example
+          for script in template/run-iteration.sh template/drive-to-goal.sh \
+                        template/sandbox/run-sandboxed.sh template/tools/metric-contract.sh \
+                        examples/prompt-technique-tournament/run-iteration.sh \
+                        examples/prompt-technique-tournament/drive-to-goal.sh \
+                        examples/latency-tuner/run-iteration.sh \
+                        examples/latency-tuner/drive-to-goal.sh; do
+            bash -n "$script"
+          done
+      - name: Runners identical across template + examples
         run: |
-          diff template/run-iteration.sh examples/prompt-technique-tournament/run-iteration.sh
-          diff template/drive-to-goal.sh examples/prompt-technique-tournament/drive-to-goal.sh
+          for example in prompt-technique-tournament latency-tuner; do
+            diff template/run-iteration.sh "examples/$example/run-iteration.sh"
+            diff template/drive-to-goal.sh "examples/$example/drive-to-goal.sh"
+          done
+      - name: Shared tools identical across template + examples
+        run: |
+          for example in prompt-technique-tournament latency-tuner; do
+            diff template/tools/verdict.py "examples/$example/tools/verdict.py"
+            diff template/tools/metric-contract.sh "examples/$example/tools/metric-contract.sh"
+          done
+      - name: Mechanical gate self-test (the known-nothing control)
+        run: python3 template/tools/verdict.py self-test

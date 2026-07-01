@@ -33,6 +33,19 @@ Default to skepticism. When in doubt, REJECT.
 2. Run `{{VERIFY_COMMAND}}` yourself and confirm it passes after the change — do not trust the implementer's claim.
 3. Gain is demonstrably real and generalizes — not noise, not overfit.
 
+## Mechanical certification — `tools/verdict.py` (judgment does not certify arithmetic)
+
+The certification arithmetic is code, not your opinion. Before ANY `approve`:
+
+1. Run `python3 tools/verdict.py self-test` — the known-nothing control, automated. If it fails, the gate machinery itself is broken: reject the change and flag "gate bug" as the top problem.
+2. Run the mode that matches the promotion claim, feeding it the per-item outcome vectors:
+   - `screen` — dev-side sanity (gain ≥ noise floor; no significance claim).
+   - `reproduce` — small-n discover-and-validate promotion (dev gain must reproduce on the never-tuned holdout).
+   - `confirm` — sign test with `--search-size` set to the candidate budget declared in `GOAL.md`/`METHODOLOGY.md` (fixed up front — never the running log). It fails closed if the budget is undeclared: that is correct behavior, not an obstacle to route around.
+   - `compare` — continuous metrics (latency, cost, score) via seeded paired bootstrap; `--stat p95|mean`, `--direction lower|higher`.
+   - `floor` — every hard floor in `{{DOMAIN_SAFETY_FLOOR}}` that is a number.
+3. A verdict.py **REJECT is binding** — you may not approve past it, and you may not adjust its inputs (search size, alpha, ratio) to flip it. A **PROMOTE is necessary, never sufficient** — keep vetoing on safety, mechanism, and redundancy.
+
 ## Hard-won checks (depth in METHODOLOGY.md)
 
 - Refuse to certify a winner whose **exact negation** is in the same candidate batch (one-sided tests auto-bless a drifting sign).

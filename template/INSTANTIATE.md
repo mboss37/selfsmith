@@ -6,6 +6,22 @@
 
 ## Ordered fill-in checklist
 
+### Step 0 — Prove your metric before you loop
+
+The loop is only as good as the metric it optimizes (`{{PROVE_COMMAND}}`). A broken or
+noisy metric silently certifies bad changes and kills good ones — and no gate discipline
+downstream can save a loop that is optimizing a lie. So the metric is validated FIRST,
+before any other blank is filled:
+
+- [ ] Open `metric-contract.env` and set `{{METRIC_GOOD_CMD}}` — a command that prints the
+  metric (bare number, last line) for a variant you KNOW is good
+- [ ] Set `{{METRIC_BAD_CMD}}` — the same metric for a **planted-bad control** you know is
+  worse (the baseline, a deliberately broken config). If you cannot name one, you do not
+  yet have a metric — you have an opinion. Stop and build the measurement first.
+- [ ] Set `METRIC_DIRECTION` — `higher` or `lower`
+- [ ] Run `bash tools/metric-contract.sh` — it must print PASS (numeric, deterministic,
+  and separating). The loop also re-runs this at triage whenever measurement is in doubt.
+
 ### Step 1 — Fill in GOAL.md
 
 Open `GOAL.md` and replace every `{{TOKEN}}`:
@@ -90,8 +106,10 @@ Choose how the loop runs:
   (Windows). Each tick is a fresh session (`claude -p`, no `--continue` — disk is the loop's
   memory); the wrapper takes a single-flight lock and time-boxes the run. The time-box needs GNU
   `timeout`/`gtimeout` (stock macOS has neither until `brew install coreutils`); without it the
-  lock still holds but there is no per-iteration ceiling. Sandbox it for safe unattended use.
-  Make it executable once: `chmod +x run-iteration.sh`.
+  lock still holds but there is no per-iteration ceiling. Cap per-iteration spend with
+  `ITER_MAX_TURNS` (default 50 agent turns). Sandbox it for safe unattended use — pick a
+  jail from `sandbox/` (container / hardened systemd unit / macOS Seatbelt; see
+  `sandbox/README.md`). Make it executable once: `chmod +x run-iteration.sh`.
 - [ ] **Run until done (bounded loops)** — for a loop with a finish line (a checklist, a winner),
   run `./drive-to-goal.sh` to fire fresh iterations **back-to-back until it converges**, then stop.
   It calls `run-iteration.sh` in series and stops on a `DONE` marker, a stall (no commit for
@@ -128,3 +146,5 @@ Every `{{TOKEN}}` used anywhere in this template, with a one-line meaning.
 | `{{LOG_FILE}}` | Relative path to the append-only iteration log (e.g. `LOG.md`) |
 | `{{NOTIFY_COMMAND}}` | Shell command to notify a human after each iteration (or `true` for silent) |
 | `{{STATE_SOURCE}}` | File path or command that gives the evaluator agent the current system state |
+| `{{METRIC_GOOD_CMD}}` | Command printing the metric (bare number) for a known-good variant — metric-contract.env, Step 0 |
+| `{{METRIC_BAD_CMD}}` | Command printing the metric for a planted-bad control that must score worse — metric-contract.env, Step 0 |
