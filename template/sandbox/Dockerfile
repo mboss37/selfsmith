@@ -1,4 +1,4 @@
-# Minimal jail image for an unattended selfsmith loop: Claude Code + Python + git, run as
+# Minimal sandbox image for an unattended selfsmith loop: Claude Code + Python + git, run as
 # an unprivileged user. Extend with your domain's dependencies (see sandbox/README.md);
 # the hard restrictions (read-only rootfs, cap-drop, ceilings, read-only floor mounts)
 # live in run-sandboxed.sh, not here.
@@ -12,7 +12,7 @@ RUN apt-get update \
 RUN npm install -g @anthropic-ai/claude-code
 
 # Unprivileged, fixed UID so run-sandboxed.sh can pin --user and volume permissions are
-# predictable. Never run the loop as root — a jail with a root process is half a jail.
+# predictable. Never run the loop as root.
 RUN useradd --create-home --uid 10001 loop
 USER loop
 WORKDIR /loop

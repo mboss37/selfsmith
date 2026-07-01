@@ -1,4 +1,4 @@
-"""tools/metric-contract.sh is Step 0 of instantiation — the loop must not run on a metric
+"""tools/metric-contract.sh is Step 0 of instantiation; the loop must not run on a metric
 that is non-numeric, non-deterministic, or unable to tell good from bad. These tests prove
 the shipped contract passes on this example and that each failure mode is actually caught."""
 import subprocess
@@ -61,6 +61,6 @@ def test_missing_env_file_fails(tmp_path):
 
 def test_identical_to_template_copy():
     template = EXAMPLE_DIR.parent.parent / "template" / "tools" / "metric-contract.sh"
-    if not template.exists():  # example copied out of the repo — nothing to compare against
+    if not template.exists():  # example copied out of the repo; nothing to compare against
         return
     assert CONTRACT.read_text() == template.read_text()

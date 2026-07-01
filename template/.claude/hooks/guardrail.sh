@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # PreToolUse guardrail for the self-improvement loop. Two floors the loop cannot lift on its
-# own — exit 2 blocks the call. A human edits this file by hand to change a floor; the loop
+# own; exit 2 blocks the call. A human edits this file by hand to change a floor; the loop
 # must not (and the `gate` vetoes any change that weakens a safeguard).
 #
-# Wired for Bash AND the write tools (Edit|Write|MultiEdit) — see .claude/settings.json. A
+# Wired for Bash AND the write tools (Edit|Write|MultiEdit); see .claude/settings.json. A
 # deny-list cannot protect itself if the loop can simply edit the deny-list, so write tools
 # are gated against the protected paths below. The deny-list is also INHERENTLY INCOMPLETE
-# (shell quoting can evade any pattern); it is a tripwire, not a jail. The real boundary for
-# unattended runs is an OS sandbox that denies the syscalls — run the loop inside one.
+# (shell quoting can evade any pattern); it is a tripwire, not a security boundary. The real boundary for
+# unattended runs is an OS sandbox that denies the syscalls; run the loop inside one.
 #
 # This hook FAILS CLOSED: if stdin cannot be parsed into a usable field, it blocks (exit 2).
 
 input="$(cat)"
 
 # Parse tool_name, command (lists joined to a string), and file_path in one pass. On ANY
-# parse failure emit "FAIL" so the shell blocks below — never fall through to allow.
+# parse failure emit "FAIL" so the shell blocks below; never fall through to allow.
 parsed="$(printf '%s' "$input" | python3 -c '
 import sys, json
 try:
@@ -44,18 +44,18 @@ except Exception:
 ' 2>/dev/null || printf "FAIL\n")"
 
 if [ "$(printf '%s' "$parsed" | sed -n '1p')" != "OK" ]; then
-  echo "BLOCKED: guardrail could not parse the tool call — failing closed (exit 2)." >&2
+  echo "BLOCKED: guardrail could not parse the tool call; failing closed (exit 2)." >&2
   exit 2
 fi
 tool_name="$(printf '%s' "$parsed" | sed -n '2p')"
 cmd="$(printf '%s' "$parsed" | sed -n '3p')"
 file_path="$(printf '%s' "$parsed" | sed -n '4p')"
 
-# PROTECTED PATHS — the loop must never edit its own floor or a domain-sacred file. ALWAYS
+# PROTECTED PATHS: the loop must never edit its own floor or a domain-sacred file. ALWAYS
 # .claude/hooks/ and .claude/settings.json; {{PROTECTED_PATHS}} is an ERE alternation of the
-# domain paths the loop must never write via any tool (e.g. a sacred holdout) — fill it in from
+# domain paths the loop must never write via any tool (e.g. a sacred holdout); fill it in from
 # INSTANTIATE.md; if your domain has none, set it to a never-match token (e.g. __NO_PROTECTED__).
-# NOTE: .claude/agents/ and .claude/commands/ are deliberately NOT protected — the meta-improver
+# NOTE: .claude/agents/ and .claude/commands/ are deliberately NOT protected; the meta-improver
 # edits those by design.
 PROTECTED_PATHS='\.claude/hooks/|\.claude/settings\.json|{{PROTECTED_PATHS}}'
 # A write verb in a Bash command (mirrors the write-tool gate so a redirect can't do what an
@@ -63,27 +63,27 @@ PROTECTED_PATHS='\.claude/hooks/|\.claude/settings\.json|{{PROTECTED_PATHS}}'
 # sed -i, dd … of=, truncate, and a python open() write.
 WRITE_VERBS='>|tee[[:space:]]|tee$|\bcp\b|\bmv\b|\binstall\b|sed[[:space:]]+-i|dd[[:space:]]+.*of=|\btruncate\b|python[[:space:]].*-c.*open'
 
-# WRITE-TOOL PROTECTION — the architectural fix. A Bash-only deny-list is moot if the loop can
+# WRITE-TOOL PROTECTION: the architectural fix. A Bash-only deny-list is moot if the loop can
 # just Edit/Write the deny-list (or overwrite a sacred file). For Edit|Write|MultiEdit|NotebookEdit,
 # block any write into a protected path.
 if printf '%s' "$tool_name" | grep -Eq '^(Edit|Write|MultiEdit|NotebookEdit)$'; then
   if printf '%s' "$file_path" | grep -Eq "$PROTECTED_PATHS"; then
-    echo "BLOCKED: write-tool floor — refusing to edit a protected path ('$file_path'). Edit .claude/hooks/guardrail.sh by hand to change this floor." >&2
+    echo "BLOCKED: write-tool floor: refusing to edit a protected path ('$file_path'). Edit .claude/hooks/guardrail.sh by hand to change this floor." >&2
     exit 2
   fi
   exit 0
 fi
 
-# BASH-SIDE PROTECTED-PATH WRITE — parity with the write-tool gate. A redirect/cp/tee/sed -i into
+# BASH-SIDE PROTECTED-PATH WRITE: parity with the write-tool gate. A redirect/cp/tee/sed -i into
 # a protected path is a write the Edit gate would refuse; refuse it here too. Two-condition match
-# (protected path referenced AND a write verb present) — order-independent and fail-safe. Reading
+# (protected path referenced AND a write verb present); order-independent and fail-safe. Reading
 # a protected path with no write verb (e.g. `cat .claude/hooks/guardrail.sh`) stays ALLOWED.
 if printf '%s' "$cmd" | grep -Eq "$PROTECTED_PATHS" && printf '%s' "$cmd" | grep -Eq "$WRITE_VERBS"; then
-  echo "BLOCKED: protected-path floor — refusing to write a protected path via Bash ('$cmd'). Edit .claude/hooks/guardrail.sh by hand to change this floor." >&2
+  echo "BLOCKED: protected-path floor: refusing to write a protected path via Bash ('$cmd'). Edit .claude/hooks/guardrail.sh by hand to change this floor." >&2
   exit 2
 fi
 
-# Floor 1 — DOMAIN SAFETY (Bash). Replace {{DOMAIN_FORBIDDEN_PATTERN}} with your domain's "never
+# Floor 1: DOMAIN SAFETY (Bash). Replace {{DOMAIN_FORBIDDEN_PATTERN}} with your domain's "never
 # do this" (e.g. mutating a sacred holdout, enabling real spend, touching production). Delete
 # this block only if your domain has no such floor.
 if printf '%s' "$cmd" | grep -Eq '{{DOMAIN_FORBIDDEN_PATTERN}}'; then
@@ -91,10 +91,10 @@ if printf '%s' "$cmd" | grep -Eq '{{DOMAIN_FORBIDDEN_PATTERN}}'; then
   exit 2
 fi
 
-# Floor 2 — MACHINE SAFETY (do not weaken — a destructive/exfiltration deny-list for unattended loops). /dev/null stays
+# Floor 2: MACHINE SAFETY (do not weaken; a destructive/exfiltration deny-list for unattended loops). /dev/null stays
 # allowed; only real block devices are caught.
 if printf '%s' "$cmd" | grep -Eq 'rm[[:space:]]+-[A-Za-z]*r[A-Za-z]*f|rm[[:space:]]+-[A-Za-z]*f[A-Za-z]*r|rm[[:space:]]+-r[A-Za-z]*[[:space:]]+-f|rm[[:space:]]+-f[A-Za-z]*[[:space:]]+-r|rm[[:space:]]+.*--recursive|rm[[:space:]]+.*--force|find[[:space:]]+.*-delete|chmod[[:space:]]+.*(-[A-Za-z]*R|--recursive|777)|\bsudo\b|git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+.*\bpush\b.*(--force|[[:space:]]-[A-Za-z]*f)|git[[:space:]]+clean[[:space:]]+.*-[A-Za-z]*f|git[[:space:]]+branch[[:space:]]+.*-D([[:space:]]|$)|git[[:space:]]+checkout[[:space:]]+--[[:space:]]|\bmkfs\b|\bdd[[:space:]]+if=|of=/dev/(disk|rdisk|sd|nvme|hd)|>[[:space:]]*/dev/(disk|rdisk|sd|nvme|hd)|(tee|cp|mv)[[:space:]]+.*/dev/(disk|rdisk|sd|nvme|hd)|\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&|\|[[:space:]]*(sh|bash|zsh)([[:space:]]|$)|(curl|wget)[[:space:]].*\|[[:space:]]*(sh|bash|zsh)'; then
-  echo "BLOCKED: non-destructive floor — refusing a destructive/exfiltration command ('$cmd')." >&2
+  echo "BLOCKED: non-destructive floor: refusing a destructive/exfiltration command ('$cmd')." >&2
   exit 2
 fi
 

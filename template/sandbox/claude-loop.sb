@@ -1,14 +1,14 @@
-;; claude-loop.sb — macOS Seatbelt profile for an unattended selfsmith loop.
+;; claude-loop.sb: macOS Seatbelt profile for an unattended selfsmith loop.
 ;;
 ;; Usage (from the loop root):
 ;;   sandbox-exec -f sandbox/claude-loop.sb -D LOOP_DIR="$PWD" -D HOME_DIR="$HOME" ./run-iteration.sh
 ;;
 ;; Later rules override earlier ones: deny all writes, allow the working set, then
-;; RE-DENY the floor inside the writable loop dir — the loop cannot lift its own floor
+;; RE-DENY the floor inside the writable loop dir, so the loop cannot lift its own floor
 ;; even though it can write everywhere else in its directory.
 ;;
 ;; sandbox-exec is deprecated-but-functional (Apple's own daemons still use the
-;; mechanism). For anything security-critical prefer the container jail (see README.md).
+;; mechanism). For anything security-critical prefer the container sandbox (see README.md).
 
 (version 1)
 (allow default)

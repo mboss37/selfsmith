@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the fixed traffic traces — run ONCE at project start, then never again.
+"""Generate the fixed traffic traces: run ONCE at project start, then never again.
 
 The traces are the measurement data: two windows of pre-drawn upstream behavior that the
 replay harness (run_eval.py) scores policies against. Regenerating them mid-campaign would
-rewrite the ruler — the guardrail blocks this script inside the loop, and traces/ is a
+rewrite the ruler; the guardrail blocks this script inside the loop, and traces/ is a
 protected path. Seeded PRNG throughout: same seed, same traces, byte for byte.
 
 Each trace line is one request: MAX_ATTEMPTS pre-drawn upstream outcomes
@@ -13,12 +13,12 @@ identical traffic.
 
 The physics that makes tuning non-trivial: upstream slowness comes in MODES (fast /
 medium / slow-congested), and a request's later attempts keep the previous attempt's mode
-with probability RHO. Train window ("days 1-5"): rho=0.3 — slowness is transient blips, a
-quick retry usually escapes, so tight timeouts look brilliant. Holdout window ("days
-6-7"): the upstream has degraded — medians shift up, the slow mode is common, and rho=0.75
-— congestion PERSISTS, so a timeout-and-retry storm burns its whole attempt budget inside
-the same congested episode and turns into an error. A policy tuned to train's transient
-regime breaks here; a robust one holds.
+with probability RHO. Train window ("days 1-5"): rho=0.3, so slowness is transient blips,
+a quick retry usually escapes, and tight timeouts look brilliant. Holdout window ("days
+6-7"): the upstream has degraded (medians shift up, the slow mode is common) and rho=0.75
+means congestion PERSISTS, so a timeout-and-retry storm burns its whole attempt budget
+inside the same congested episode and turns into an error. A policy tuned to train's
+transient regime breaks here; a robust one holds.
 """
 import json
 import random
@@ -55,7 +55,7 @@ def make_window(seed, n, fail_p, rho, modes):
 
 def main():
     TRACES.mkdir(exist_ok=True)
-    # days 1-5: healthy upstream — slowness is transient (rho=0.3), retries escape it
+    # days 1-5: healthy upstream; slowness is transient (rho=0.3), retries escape it
     (TRACES / "train.jsonl").write_text(make_window(
         seed=1101, n=1000, fail_p=0.03, rho=0.30,
         modes=[
@@ -63,7 +63,7 @@ def main():
             (0.25, lambda r: r.gauss(210, 25)),                 # medium
             (0.10, lambda r: 800 + r.expovariate(1 / 1200)),    # slow episode
         ]))
-    # days 6-7: degraded upstream — medians up, congestion persists (rho=0.75), retries
+    # days 6-7: degraded upstream; medians up, congestion persists (rho=0.75), retries
     # tend to land inside the same slow episode
     (TRACES / "holdout.jsonl").write_text(make_window(
         seed=2207, n=600, fail_p=0.05, rho=0.75,

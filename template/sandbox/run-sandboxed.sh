@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# run-sandboxed.sh — one iteration inside the container jail. Schedule THIS from cron for
-# unattended runs if you want the jail on every tick (recommended):
+# run-sandboxed.sh: one iteration inside the container sandbox. Schedule THIS from cron
+# for unattended runs if you want the sandbox on every tick (recommended):
 #   0 * * * * cd /path/to/my-loop && ./sandbox/run-sandboxed.sh
 #
-# What the jail enforces at the OS level (the guardrail hook only tripwires these):
+# What the sandbox enforces at the OS level (the guardrail hook only tripwires these):
 #   - rootfs read-only; the ONLY writable paths are the loop dir, /tmp, and the home dir
-#   - the floor (.claude/hooks/, settings.json) re-mounted READ-ONLY inside the loop dir —
-#     even a hook bug cannot lift the floor
+#   - the floor (.claude/hooks/, settings.json) re-mounted READ-ONLY inside the loop dir,
+#     so even a hook bug cannot lift the floor
 #   - all capabilities dropped, no privilege escalation, unprivileged fixed UID
 #   - memory / CPU / pid ceilings so a runaway degrades, not the machine
 #
@@ -19,7 +19,7 @@ ENGINE="${CONTAINER_ENGINE:-docker}"
 IMAGE="${LOOP_IMAGE:-selfsmith-loop}"
 
 if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-  echo "run-sandboxed: ANTHROPIC_API_KEY is not set — the containerized CLI authenticates via env" >&2
+  echo "run-sandboxed: ANTHROPIC_API_KEY is not set; the containerized CLI authenticates via env" >&2
   exit 1
 fi
 

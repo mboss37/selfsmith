@@ -1,3 +1,3 @@
 pytest>=7.0
-# Optional — only for `--model claude` (real Anthropic calls); the offline mock needs nothing here:
+# Optional, only for `--model claude` (real Anthropic calls); the offline mock needs nothing here:
 # anthropic>=0.40,<1.0

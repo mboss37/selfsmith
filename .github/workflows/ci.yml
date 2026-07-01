@@ -38,7 +38,7 @@ jobs:
           for hook in template/.claude/hooks/guardrail.sh \
                       examples/prompt-technique-tournament/.claude/hooks/guardrail.sh \
                       examples/latency-tuner/.claude/hooks/guardrail.sh; do
-            grep -qF 'Floor 2 — MACHINE SAFETY' "$hook"
+            grep -qF 'Floor 2: MACHINE SAFETY' "$hook"
             diff <(sed -n '/Floor 2/,$p' template/.claude/hooks/guardrail.sh) \
                  <(sed -n '/Floor 2/,$p' "$hook")
           done

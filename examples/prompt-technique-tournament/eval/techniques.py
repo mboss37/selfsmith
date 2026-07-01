@@ -37,14 +37,14 @@ def _keyword_rules(base, pool):
 
 
 TECHNIQUES = {
-    "zero_shot":        (_zero_shot,        "baseline — instruction only, no scaffolding"),
+    "zero_shot":        (_zero_shot,        "baseline: instruction only, no scaffolding"),
     "few_shot":         (_few_shot,         "labeled examples teach the exact category set"),
     "chain_of_thought": (_chain_of_thought, "intermediate reasoning unlocks multi-issue urgency"),
     "role":             (_role,             "a role primes domain-appropriate attention"),
     "format_spec":      (_format_spec,      "an explicit schema reduces malformed output"),
     "decomposition":    (_decomposition,    "separating sub-questions isolates the refund decision"),
     "self_critique":    (_self_critique,    "a draft-critique pass catches reasoning slips"),
-    "keyword_rules":    (_keyword_rules,    "hand rules off surface tokens — brittle, may not generalize"),
+    "keyword_rules":    (_keyword_rules,    "hand rules off surface tokens; brittle, may not generalize"),
 }
 
 

@@ -14,11 +14,11 @@
 {{PRIORITY_ORDER}}
 
 Skeleton (keep or replace):
-1. Correctness and safety — output must be valid; no constraint violation
-2. Persistence and integrity — improvements must survive restart; state must not corrupt
-3. Core logic quality — the main decision/control loop does the right thing
-4. Tuning — numeric parameters are well-calibrated
-5. Scope expansion — new capabilities, only after the above are solid
+1. Correctness and safety: output must be valid; no constraint violation
+2. Persistence and integrity: improvements must survive restart; state must not corrupt
+3. Core logic quality: the main decision/control loop does the right thing
+4. Tuning: numeric parameters are well-calibrated
+5. Scope expansion: new capabilities, only after the above are solid
 
 ## Primary objective
 
@@ -27,12 +27,12 @@ Skeleton (keep or replace):
 ## Backlog
 
 <!-- Append candidate improvements here. The proposer agent draws from this list. -->
-<!-- Format: - [ ] <idea> — <rationale> — <risk> -->
-<!-- - [ ] Example: reduce cold-start latency — p99 too high — risk: don't regress steady-state throughput -->
+<!-- Format: - [ ] <idea>; <rationale>; <risk> -->
+<!-- - [ ] Example: reduce cold-start latency; p99 too high; risk: don't regress steady-state throughput -->
 
 <!-- Consider building (loop integrity infrastructure): -->
-<!-- - [ ] Standing known-null control probe — periodically runs a meaningless-but-clean input through the production gate and confirms it gets rejected; any survival is a gate defect to investigate — risk: false positives if the probe isn't clean enough -->
-<!-- - [ ] Reward-hacking circuit-breaker — trips when a proxy metric drifts up without out-of-sample confirmation, or the gate's reject-rate quietly decays; the loop itself may never edit or tune this safeguard — risk: must be calibrated to distinguish genuine improvement from drift -->
+<!-- - [ ] Standing known-null control probe: periodically runs a meaningless-but-clean input through the production gate and confirms it gets rejected; any survival is a gate defect to investigate. Risk: false positives if the probe isn't clean enough -->
+<!-- - [ ] Reward-hacking circuit-breaker: trips when a proxy metric drifts up without out-of-sample confirmation, or the gate's reject-rate quietly decays; the loop itself may never edit or tune this safeguard. Risk: must be calibrated to distinguish genuine improvement from drift -->
 
 ## Definition of an improvement
 
@@ -42,7 +42,7 @@ A change is an improvement when ALL of these hold:
 - The change is verified by `{{VERIFY_COMMAND}}` passing
 - The claim is proven by `{{PROVE_COMMAND}}` producing a measurable result
 
-If any condition is false, the iteration is a no-op — revert and log the lesson.
+If any condition is false, the iteration is a no-op: revert and log the lesson.
 
 ## Hard constraints (domain safety floor)
 

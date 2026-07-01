@@ -1,4 +1,4 @@
-# selfsmith-loop.timer — the cron replacement: fires selfsmith-loop.service on a schedule.
+# selfsmith-loop.timer is the cron replacement: fires selfsmith-loop.service on a schedule.
 # The service runs run-iteration.sh, which still takes the single-flight lock and time-box,
 # so an overlapping fire is skipped cleanly. Adjust OnCalendar to your domain's cadence
 # (how fast does new data actually accumulate between ticks?).
