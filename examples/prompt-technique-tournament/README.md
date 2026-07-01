@@ -1,6 +1,8 @@
 # Prompt-technique tournament: example loop
 
-A self-improving loop that tests different prompting techniques against a fixed task (sorting support messages into categories) and finds whichever one actually works on messages it hasn't seen before, not just the one that scored best on the messages it practiced on. Runs offline with realistic fake data; no API key needed.
+A self-improving loop that tests different prompting techniques against a fixed task (sorting support messages into categories) and finds whichever one actually works on messages it hasn't seen before, not just the one that scored best on the messages it practiced on. Runs offline; no API key needed.
+
+The support messages are synthetic examples written for this exercise, not real customer messages. By default, scoring uses a deterministic stand-in instead of a real model call: each test case carries a hidden tag saying which techniques should solve it, and the stand-in checks that tag instead of actually reading and understanding the message. That's what makes the whole thing run offline and produce the exact same result every time.
 
 New to Selfsmith? The [root README](../../README.md) explains the whole idea in plain terms and has a glossary for any term below that isn't obvious.
 
@@ -70,16 +72,16 @@ python -m pytest eval/ -q   # expects all green
 
 `holdout` is the one honest check. Looking at it for inspiration, even without formally scoring against it, defeats the whole point, the same way peeking at exam answers while studying does. The safety script in `.claude/settings.json` blocks any command that would edit `holdout.jsonl` while the loop is running, so this isn't just a rule someone has to remember.
 
-## Running against a real model instead of the offline fake one
+## Running against a real model instead of the offline stand-in
 
-By default the harness uses a fake, deterministic stand-in for a model (its answers are decided by metadata attached to each test case; see `eval/task.md`). To run it against an actual Claude model instead:
+By default the harness uses the deterministic stand-in described above (its answers are decided by metadata attached to each test case; see `eval/task.md`). To run it against an actual Claude model instead:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 python eval/run_eval.py --technique few_shot+chain_of_thought --split dev --model claude
 ```
 
-`--model claude` calls `claude-haiku-4-5-20251001` through the Anthropic SDK. Check the `claude-api` skill for current model names and pricing before changing which model it uses. The loop itself is locked to the offline fake model by the safety script in `.claude/hooks/`; `--model claude` is meant for a human to check by hand, not for the loop to use on its own.
+`--model claude` calls `claude-haiku-4-5-20251001` through the Anthropic SDK. Check the `claude-api` skill for current model names and pricing before changing which model it uses. The loop itself is locked to the offline stand-in by the safety script in `.claude/hooks/`; `--model claude` is meant for a human to check by hand, not for the loop to use on its own.
 
 ## Files at a glance
 
