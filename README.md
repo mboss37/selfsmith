@@ -9,9 +9,9 @@ A reusable, domain-agnostic self-improvement loop, extracted from a production C
 
 ### Why use this
 
-Building this loop yourself takes several painful iterations to discover the failure modes this ships as structure: the adversarial gate that independently vetoes each change, the mechanical floor the loop genuinely cannot lift (not just an instruction it could argue around), honest-negative logging that counts "tested and killed" as a win, and the holdout discipline that prevents the loop from gaming its own metric. Those four things are what make an unattended loop trustworthy rather than theatrical.
+Building this loop yourself takes several painful iterations to discover the failure modes this ships as structure: the adversarial gate that independently vetoes each change — with its certification arithmetic in code (`tools/verdict.py`) so a plausible-but-wrong gain can't be argued past it; the mechanical floor the loop genuinely cannot lift (not just an instruction it could argue around), with the OS-level jail bundled in `sandbox/`; the metric contract that refuses to start a loop on a measurement that can't tell good from bad; honest-negative logging that counts "tested and killed" as a win; and the holdout discipline that prevents the loop from gaming its own metric. Those things are what make an unattended loop trustworthy rather than theatrical.
 
-Copy `template/`, fill the blanks, and have a disciplined, unattended, self-improving Claude Code loop for your domain. The `examples/prompt-technique-tournament/` directory is the same engine fully instantiated — runs offline with no API key.
+Copy `template/`, fill the blanks, and have a disciplined, unattended, self-improving Claude Code loop for your domain. Both flavors ship fully instantiated and offline (no API key): `examples/prompt-technique-tournament/` (discover-and-validate) and `examples/latency-tuner/` (optimize-a-running-system).
 
 ---
 
@@ -39,22 +39,24 @@ Anthropic's evaluator–optimizer pattern, disciplined enough for unattended ope
 
 Two properties make it disciplined enough to leave running:
 
-- **A mechanical floor the loop can't lift.** A shell hook — not an instruction — gates Bash AND the file-edit tools (Edit/Write/MultiEdit/NotebookEdit), so the loop can't rewrite its own guardrail, settings, or a protected path — whether via a file-edit tool OR a Bash redirect/`cp`/`tee`/`sed -i` (the Bash branch mirrors the write-tool gate). The hook fails closed: an unparseable tool call is blocked, not allowed through. That said, a command deny-list is a **tripwire for honest mistakes, not a complete security boundary** against an adversarial agent — shell quoting and obfuscation can evade any string-matching list. For genuinely safe unattended runs, add an OS sandbox (macOS Sandbox, a container, or an unprivileged user) where destructive syscalls are impossible at the OS level, and optionally `chmod 0444` the guardrail and settings files. Distinguish the **mechanical floor** (hook + OS sandbox) from the **disciplinary controls** (gate veto, meta-improver restraint, orchestrator) — the latter are LLM judgment, not hard blocks.
+- **A mechanical floor the loop can't lift.** A shell hook — not an instruction — gates Bash AND the file-edit tools (Edit/Write/MultiEdit/NotebookEdit), so the loop can't rewrite its own guardrail, settings, or a protected path — whether via a file-edit tool OR a Bash redirect/`cp`/`tee`/`sed -i` (the Bash branch mirrors the write-tool gate). The hook fails closed: an unparseable tool call is blocked, not allowed through. That said, a command deny-list is a **tripwire for honest mistakes, not a complete security boundary** against an adversarial agent — shell quoting and obfuscation can evade any string-matching list. For genuinely safe unattended runs, add an OS sandbox where destructive syscalls are impossible at the OS level — ready-to-adapt jails ship in `template/sandbox/` (container, hardened systemd unit, macOS Seatbelt) — and optionally `chmod 0444` the guardrail and settings files. Distinguish the **mechanical floor** (hook + OS sandbox) from the **disciplinary controls** (gate veto, meta-improver restraint, orchestrator) — the latter are LLM judgment, not hard blocks.
 - **Gates default to REJECT.** Killing a good idea is cheaper than shipping a bad one.
 
 ---
 
-## The anatomy — 7 structural parts
+## The anatomy — 9 structural parts
 
 | Part | Role |
 |---|---|
 | `commands/iterate.md` | **Orchestrator** — thin router; runs ONE disciplined iteration |
 | `PERSONA.md` | **Decision philosophy** — a named expert archetype and operating principles |
-| `GOAL.md` | **Mission, priority order, acceptance test, backlog, definition of done** |
+| `GOAL.md` | **Mission, priority order, acceptance test, candidate budget, definition of done** |
 | `agents/*.md` | **Worker roles** — 4–5 archetypes (see below) |
 | `hooks/guardrail.sh` + `settings.json` | **The floor** — a mechanical guardrail the loop can't lift itself |
 | `METHODOLOGY.md` | **"How we don't fool ourselves"** — rulebook and go/no-go gate |
 | `LOG.md` | **Memory** — append-only honest diary, one entry per iteration |
+| `tools/verdict.py` + `tools/metric-contract.sh` | **The arithmetic** — mechanical certification (sign test / paired bootstrap, deflated by the declared search budget, fails closed) and the prove-your-metric-first contract |
+| `sandbox/` | **The jail** — container, systemd, and Seatbelt configs; the boundary the tripwire is not |
 
 ---
 
@@ -102,6 +104,7 @@ The loop tunes something that is already running. Changes are incremental — pa
 - **Agents used:** evaluator → implementer → gate
 - **Proposer:** optional (the evaluator's diagnosis often points directly at the change)
 - **Holdout:** usually a time-based out-of-sample split or a held-out test set
+- **Worked example:** `examples/latency-tuner/` — retry-policy tuning against replayed traffic, with an out-of-time holdout, a hard error-rate floor, and a planted config that tops the train leaderboard and breaches the floor out-of-time
 
 ### Discover and validate
 
@@ -110,8 +113,7 @@ The loop searches a space of candidates (techniques, strategies, configurations)
 - **Agents used:** evaluator → proposer → implementer → gate (with holdout check)
 - **Proposer:** required (each candidate needs a stated mechanism — "no mechanism → don't propose")
 - **Holdout:** written once, read only when a challenger wins on the dev/train split
-
-The `examples/prompt-technique-tournament/` is the richer discover-and-validate flavor: the loop searches a catalog of prompting techniques for the one that generalizes to unseen cases, and the gate rejects any candidate whose dev win doesn't reproduce on the holdout.
+- **Worked example:** `examples/prompt-technique-tournament/` — the loop searches a catalog of prompting techniques for the one that generalizes to unseen cases, and the gate rejects any candidate whose dev win doesn't reproduce on the holdout
 
 ---
 
@@ -121,9 +123,11 @@ The `examples/prompt-technique-tournament/` is the richer discover-and-validate 
 cp -r template/ my-loop/
 ```
 
-Then follow `INSTANTIATE.md` in your new directory (it lives at `template/INSTANTIATE.md` in this repo). It is an ordered checklist — GOAL → PERSONA → METHODOLOGY → guardrail → agents → iterate command → run mechanism — with a glossary of every `{{TOKEN}}` and what it means.
+Then follow `INSTANTIATE.md` in your new directory (it lives at `template/INSTANTIATE.md` in this repo). It is an ordered checklist — **metric contract first (Step 0)** → GOAL → PERSONA → METHODOLOGY → guardrail → agents → iterate command → run mechanism — with a glossary of every `{{TOKEN}}` and what it means.
 
-The tokens you fill in across the files (see `INSTANTIATE.md` for the full glossary): `{{PERSONA_NAME}}`, `{{MISSION}}`, `{{VERIFY_COMMAND}}`, `{{PROVE_COMMAND}}`, `{{STATE_SOURCE}}`, `{{LOG_FILE}}`, `{{NOTIFY_COMMAND}}`, `{{DOMAIN_SAFETY_FLOOR}}`, and the `guardrail.sh` Floor-1 token `{{DOMAIN_FORBIDDEN_PATTERN}}`. Fill them top-to-bottom; later files reference tokens set in earlier ones.
+Step 0 is the one people skip and regret: before any other blank, `metric-contract.env` + `bash tools/metric-contract.sh` must prove your metric is numeric, deterministic, and able to score a planted-bad control worse than a known-good one. The loop is only as good as the metric it optimizes; a loop pointed at a metric that fails its own contract optimizes a lie, and no downstream gate can save it.
+
+The tokens you fill in across the files (see `INSTANTIATE.md` for the full glossary): `{{METRIC_GOOD_CMD}}`/`{{METRIC_BAD_CMD}}` (Step 0), `{{PERSONA_NAME}}`, `{{MISSION}}`, `{{VERIFY_COMMAND}}`, `{{PROVE_COMMAND}}`, `{{STATE_SOURCE}}`, `{{LOG_FILE}}`, `{{NOTIFY_COMMAND}}`, `{{DOMAIN_SAFETY_FLOOR}}`, and the `guardrail.sh` Floor-1 token `{{DOMAIN_FORBIDDEN_PATTERN}}`. Fill them top-to-bottom; later files reference tokens set in earlier ones. Declare the **candidate budget** in `GOAL.md`/`METHODOLOGY.md` while you're there — `tools/verdict.py` refuses to certify significance without it.
 
 ---
 
@@ -155,7 +159,7 @@ chmod +x run-iteration.sh                       # once
 0 * * * * cd /path/to/my-loop && ./run-iteration.sh
 ```
 
-Prefer your platform's native scheduler if you like — **launchd** (macOS), a **systemd timer** (Linux), or **Task Scheduler** via WSL (Windows). Each just runs `run-iteration.sh` on a timer. Override the per-iteration ceiling with `ITER_TIMEOUT` (default `50m`). The time-box needs GNU `timeout` (or `gtimeout`); stock macOS ships neither until you `brew install coreutils`, and without one the single-flight lock still holds but there is **no per-iteration ceiling** — the wrapper says so on stderr.
+Prefer your platform's native scheduler if you like — **launchd** (macOS), a **systemd timer** (Linux; a hardened unit+timer pair ships in `sandbox/`), or **Task Scheduler** via WSL (Windows). Each just runs `run-iteration.sh` on a timer. Override the per-iteration wall-clock ceiling with `ITER_TIMEOUT` (default `50m`) and the per-iteration **spend ceiling** with `ITER_MAX_TURNS` (default `50` agent turns, passed to `claude -p --max-turns`) — an unattended loop needs a budget floor it cannot argue past, exactly like the safety floor; raise it deliberately rather than removing it. The time-box needs GNU `timeout` (or `gtimeout`); stock macOS ships neither until you `brew install coreutils`, and without one the single-flight lock still holds but there is **no per-iteration ceiling** — the wrapper says so on stderr.
 
 **Run until done (bounded loops):**
 
@@ -168,7 +172,7 @@ MAX_ITERS=40 STALL_LIMIT=5 ./drive-to-goal.sh     # override the bounds
 
 **Which mode?** Back-to-back (`drive-to-goal.sh`) for **bounded / convergent** work — go fast to the goal, then stop. A **timer** (cron / launchd / systemd running `run-iteration.sh`) for **ongoing / time-dependent** work — tuning a live system where you *want* spacing so new data accumulates between ticks. Same fresh-session-per-tick discipline either way; only the trigger differs.
 
-The wrapper handles overlap and timeouts. It does **not** sandbox — that is still on you, and it is the real boundary: the guardrail deny-list is a **tripwire for honest mistakes, not a jail** (shell quoting, encoding, and command substitution evade any string match). For genuinely safe unattended runs, launch the wrapper inside an **OS sandbox** (macOS Sandbox, Linux namespaces, or a container with a minimal filesystem) or an unprivileged user where destructive syscalls are impossible at the OS level, and optionally `chmod 0444` the guardrail and settings files.
+The wrapper handles overlap and timeouts. It does **not** sandbox — and the sandbox is the real boundary: the guardrail deny-list is a **tripwire for honest mistakes, not a jail** (shell quoting, encoding, and command substitution evade any string match). The jail ships in **`sandbox/`**: a container image + locked-down runner (`sandbox/run-sandboxed.sh` — read-only rootfs, dropped capabilities, resource ceilings, the floor files mounted read-only even inside the writable area), a hardened **systemd** unit+timer, and a macOS **Seatbelt** profile. Pick one before running unattended — see `sandbox/README.md` — and optionally `chmod 0444` the guardrail and settings files on top.
 
 Before running unattended, confirm the guardrail actually blocks what it should — not just that the script parses:
 ```bash
@@ -178,26 +182,32 @@ A syntax check does not prove the floors fire. The worked example ships `eval/te
 
 ---
 
-## Worked example
+## Worked examples — both flavors, both with a planted trap the gate must catch
 
-`examples/prompt-technique-tournament/` — the discover-and-validate flavor instantiated for a prompt-engineering domain.
+Every example is offline and deterministic (no API key), fully instantiated from the template, and ships a trap that looks like the best candidate on the in-sample data and fails out-of-sample — so "the gate bites" is a tested property, not a claim.
 
-The loop searches a catalog of named prompting techniques (few-shot, chain-of-thought, decomposition, etc.) for the best-generalizing one on a support-message triage task. It runs offline with no API key required.
+### `examples/prompt-technique-tournament/` — discover and validate
+
+Searches a catalog of named prompting techniques (few-shot, chain-of-thought, decomposition, …) for the best-generalizing one on a support-message triage task.
 
 ```bash
 cd examples/prompt-technique-tournament
-
-# Score any technique
-python eval/run_eval.py --technique few_shot --split dev --model mock
-
-# Run all harness tests (the full suite passes)
-python -m pytest eval/ -q
-
-# Open Claude Code and run one iteration
-claude
-# /iterate
+python eval/run_eval.py --technique few_shot --split dev --model mock   # score any technique
+python -m pytest eval/ -q                                               # full suite passes
+claude   # then: /iterate
 ```
 
-The example has a planted trap (`keyword_rules`) that wins on dev but not holdout — the gate must catch it. The converged champion is `few_shot+chain_of_thought+decomposition`.
+The trap: `keyword_rules` wins +2 cases on dev and +0 on holdout — `tools/verdict.py reproduce` rejects it mechanically. The converged champion is `few_shot+chain_of_thought+decomposition`, and its final claim over the baseline survives an exact sign test deflated by the full declared 24-candidate budget (11W/0L on holdout, p ≈ 0.001). See its README for the split discipline and the production seam (`--model claude`).
 
-See `examples/prompt-technique-tournament/README.md` for the full runbook, the split discipline, and the production seam (`--model claude` for real Anthropic calls).
+### `examples/latency-tuner/` — optimize a running system
+
+Tunes a service's retry policy (`timeout_ms`, `retries`, `backoff_ms`) against replayed traffic, promoting only what survives an **out-of-time** holdout window with a degraded upstream.
+
+```bash
+cd examples/latency-tuner
+python sim/run_eval.py --config config.json --window train              # score the champion
+python -m pytest sim/ -q                                                # full suite passes
+claude   # then: /iterate
+```
+
+The trap: `timeout_ms=260, retries=3` **tops the train leaderboard** (mean effective 320ms vs the honest 332ms) and runs **8.8% errors** on the holdout window, where congestion persists across retries — `tools/verdict.py floor` kills it. The domain also teaches the classic reward-hack: success-only latency improves when you fail fast, so the headline metric costs every error at +10s and the error floor is checked separately, both mechanically.
