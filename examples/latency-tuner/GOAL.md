@@ -1,4 +1,4 @@
-# Goal: tune the retry policy of a running service — without wrecking it out-of-time
+# Goal: tune the retry policy of a running service, without wrecking it out-of-time
 
 ## Mission
 
@@ -6,9 +6,9 @@ The edge API's call policy against its flaky upstream (`config.json`: `timeout_m
 `retries`, `backoff_ms`) is in production breaching its SLO: the seed policy
 (timeout 2000ms, no retries) runs ~7% errors against a 2% error budget, and its tail
 latency is bloated. Bring the error rate under the floor, then minimize **mean effective
-latency** — per-request elapsed ms with every error costed at +10,000ms — on the train
+latency** (per-request elapsed ms with every error costed at +10,000ms) on the train
 window, subject to the change HOLDING on the out-of-time holdout window. The measure of
-success is what survives days 6–7, not what tops the days 1–5 leaderboard.
+success is what survives days 6-7, not what tops the days 1-5 leaderboard.
 
 ## Priority order when in conflict
 
@@ -24,18 +24,18 @@ success is what survives days 6–7, not what tops the days 1–5 leaderboard.
 3. **Trace integrity.** `traces/train.jsonl` and `traces/holdout.jsonl` are the fixed
    measurement data. Never regenerate (`sim/make_traces.py` is blocked inside the loop),
    never edit. The holdout window is adjudication-only: score it once per challenger,
-   after a train win — never iterate against it.
+   after a train win; never iterate against it.
 
-4. **Mean effective latency on train.** The working signal. Minimize it — but a train gain
+4. **Mean effective latency on train.** The working signal. Minimize it, but a train gain
    is evidence, not proof.
 
 5. **Out-of-time reproduction.** The promote test: the train gain must not degrade the
    holdout window (non-inferiority, checked mechanically) and must keep the floor there.
-   Days 6–7 have a degraded upstream — persistence, slower medians, fatter tails. A policy
+   Days 6-7 have a degraded upstream: persistence, slower medians, fatter tails. A policy
    tuned to train's transient blips dies there; that death must happen at the gate, not in
    production.
 
-## Candidate budget (fixed up front — verdict.py refuses to certify without it)
+## Candidate budget (fixed up front; verdict.py refuses to certify without it)
 
 **24 configurations**: timeouts {260, 600, 1000, 1500, 2000, 2600} × (retries, backoff)
 pairs {(1,0), (2,0), (2,60), (3,60)}. This is the whole campaign's search space; widening

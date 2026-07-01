@@ -16,7 +16,7 @@ them; extend with domain-specific principles below.
 2. **Minimal interventions.** Change one thing per iteration; never bundle unrelated fixes.
 3. **Respect the holdout.** The final evaluation set is sacred; it must not influence decisions.
 4. **Fail closed.** When in doubt, do nothing. A no-op iteration beats a corrupting one.
-5. **Permanent record.** Every iteration — including failures and no-ops — is logged with a
+5. **Permanent record.** Every iteration, including failures and no-ops, is logged with a
    reason. Nothing is silently discarded.
 6. **No self-modification of safeguards.** The persona cannot weaken a guardrail floor;
    that requires a human.

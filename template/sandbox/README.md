@@ -1,10 +1,10 @@
-# sandbox/ — the actual jail
+# sandbox/: the OS-level boundary
 
 The guardrail hook is a **tripwire for honest mistakes, not a security boundary**: shell
 quoting, encoding, and command substitution can evade any string-matching deny-list. The
 boundary that actually holds is an OS-level sandbox where destructive syscalls are
 impossible regardless of what the loop tries. This directory ships three ready-to-adapt
-jails, ranked by strength. Pick one **before** running unattended — "I'll add the sandbox
+sandboxes, ranked by strength. Pick one **before** running unattended; "I'll add the sandbox
 later" is how tripwires end up load-bearing.
 
 | Option | Strength | Files |
@@ -16,7 +16,7 @@ later" is how tripwires end up load-bearing.
 All three enforce the same invariants, at the OS level, that the hook enforces as a tripwire:
 
 - The loop can write **only** its own directory (plus scratch space).
-- `.claude/hooks/` and `.claude/settings.json` — the floor — are **read-only even inside
+- `.claude/hooks/` and `.claude/settings.json` (the floor) are **read-only even inside
   the writable area**, so not even a hook bug lets the loop lift its own floor.
 - Resource ceilings (memory, tasks/pids) so a runaway iteration degrades, not the machine.
 - No privilege escalation (`no-new-privileges` / `NoNewPrivileges=` / unprivileged user).
@@ -35,7 +35,7 @@ docker build -t selfsmith-loop sandbox/
 read-only, all capabilities dropped, memory/CPU/pid ceilings, the loop directory as the
 only writable mount, and the floor files re-mounted read-only on top. Works with
 `CONTAINER_ENGINE=podman` too. Add your domain's dependencies (e.g. `pip install pytest`)
-by extending the Dockerfile — the base image ships only Claude Code, Python, and git.
+by extending the Dockerfile; the base image ships only Claude Code, Python, and git.
 
 ## 2. systemd (Linux, no container needed)
 
@@ -49,7 +49,7 @@ systemctl --user enable --now selfsmith-loop.timer
 
 The unit uses `ProtectSystem=strict` (whole OS read-only), `BindReadOnlyPaths=` on the
 floor files, `PrivateTmp=`, `NoNewPrivileges=`, an empty capability set, a syscall filter,
-and memory/task ceilings. The timer replaces the cron line — same single-flight,
+and memory/task ceilings. The timer replaces the cron line: same single-flight,
 time-boxed `run-iteration.sh` underneath.
 
 ## 3. macOS Seatbelt
@@ -61,19 +61,19 @@ sandbox-exec -f sandbox/claude-loop.sb \
 ```
 
 Denies all file writes except the loop directory, temp, and `~` (Claude Code keeps session
-state there) — then re-denies the floor files inside the loop directory. `sandbox-exec` is
+state there), then re-denies the floor files inside the loop directory. `sandbox-exec` is
 deprecated-but-functional; Apple still uses the mechanism itself. For anything
 security-critical prefer the container.
 
-## Belt and braces
+## Extra hardening
 
-Whatever jail you pick, also:
+Whatever sandbox you pick, also:
 
 ```bash
 chmod 0444 .claude/hooks/guardrail.sh .claude/settings.json   # loop runs as you? make the floor literally read-only
 python3 -m pytest eval/test_guardrail.py -q                    # prove the tripwire fires (worked examples ship this)
 ```
 
-And verify the jail itself once: from inside it, try `touch .claude/hooks/x` and
-`touch /etc/x` — both must fail with permission errors, not guardrail messages. A jail you
+And verify the sandbox itself once: from inside it, try `touch .claude/hooks/x` and
+`touch /etc/x`; both must fail with permission errors, not guardrail messages. A sandbox you
 haven't seen refuse a write is a hypothesis, not a boundary.

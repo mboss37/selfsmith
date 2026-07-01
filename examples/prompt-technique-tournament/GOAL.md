@@ -2,7 +2,7 @@
 
 ## Mission
 
-Find the prompting technique (or minimal combo) that best solves support-message triage on **unseen cases**, not the one that merely tops the dev leaderboard. The measure of success is held-out pass-rate after honest adjudication — not dev rank, not CI width, not subjective complexity.
+Find the prompting technique (or minimal combo) that best solves support-message triage on **unseen cases**, not the one that merely tops the dev leaderboard. The measure of success is held-out pass-rate after honest adjudication: not dev rank, not CI width, not subjective complexity.
 
 ## Priority order when in conflict
 
@@ -10,7 +10,7 @@ Find the prompting technique (or minimal combo) that best solves support-message
 
 2. **Holdout integrity.** The held-out split (`eval/cases/holdout.jsonl`) is never touched, inspected for technique ideas, or scored during development. It exists only to adjudicate a challenger that already beat the champion on dev.
 
-3. **Dev pass-rate.** Maximize it as a working signal — but treat it as necessary, not sufficient. A dev gain below 2 cases (at n=20) is within noise and is not a real improvement.
+3. **Dev pass-rate.** Maximize it as a working signal, but treat it as necessary, not sufficient. A dev gain below 2 cases (at n=20) is within noise and is not a real improvement.
 
 4. **Held-out generalization.** The dev gain must reproduce on holdout: same sign, at least roughly half the dev improvement in absolute cases. This is the promote test.
 
@@ -27,7 +27,7 @@ Find the prompting technique (or minimal combo) that best solves support-message
 - `python -m pytest eval/ -q` passes (all tests green).
 - The go/no-go gate approves the challenger.
 - The new champion beats the prior champion on dev by at least 2 cases AND the gain reproduces on holdout (same sign, magnitude above the noise floor).
-- The champion has survived at least one honest challenger that lost — confirming the holdout gate is biting.
+- The champion has survived at least one honest challenger that lost, confirming the holdout gate is biting.
 
 ## Done
 

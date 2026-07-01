@@ -2,7 +2,7 @@
 the planted trap's full story, and the mechanical verdicts the gate relies on.
 
 If these tests are green, the loop's measurement can be trusted; if the checksum tests
-fail, someone moved the ruler — that outranks every other result."""
+fail, someone moved the ruler; that outranks every other result."""
 import hashlib
 import json
 import subprocess
@@ -37,10 +37,10 @@ def request(*attempts):
 
 def test_traces_are_byte_identical_to_project_start():
     """The traces are the fixed measurement data. A checksum mismatch means the ruler
-    moved (regenerated traces, hand edits) — every downstream number is void."""
+    moved (regenerated traces, hand edits); every downstream number is void."""
     for name, expected in TRACE_SHA256.items():
         digest = hashlib.sha256((ROOT / "traces" / name).read_bytes()).hexdigest()
-        assert digest == expected, f"traces/{name} has changed — the ruler moved"
+        assert digest == expected, f"traces/{name} has changed; the ruler moved"
 
 
 # --- replay logic, exercised on synthetic requests -----------------------------------
@@ -122,7 +122,7 @@ def test_error_penalty_shows_up_in_effective_latency():
 
 def test_trap_tops_the_train_leaderboard():
     """The trap must be genuinely tempting: better train mean-effective than the honest
-    champion, error rate under the floor — nothing in-window flags it."""
+    champion, error rate under the floor; nothing in-window flags it."""
     trap, _ = score(dict(TRAP), "train")
     champ, _ = score(dict(CHAMPION), "train")
     assert trap["mean_effective_ms"] < champ["mean_effective_ms"]
@@ -175,7 +175,7 @@ def test_gate_floor_rejects_trap_on_holdout(tmp_path):
 
 def test_gate_non_inferiority_passes_for_champion(tmp_path):
     """Swapped-roles check on holdout: the old champion must NOT significantly beat the
-    new one — REJECT here is the pass signal for the challenger."""
+    new one; REJECT here is the pass signal for the challenger."""
     old = dump(tmp_path, "old", {"timeout_ms": 2000.0, "retries": 2, "backoff_ms": 100.0}, "holdout")
     new = dump(tmp_path, "new", CHAMPION, "holdout")
     r = run_verdict("compare", "--champion", new, "--challenger", old,
@@ -184,7 +184,7 @@ def test_gate_non_inferiority_passes_for_champion(tmp_path):
 
 
 def test_gate_certifies_final_claim_against_seed(tmp_path):
-    """The campaign's headline — the converged champion beats the SLO-breaching seed —
+    """The campaign's headline (the converged champion beats the SLO-breaching seed)
     survives the full deflated certification on the never-tuned window."""
     seed = dump(tmp_path, "seed", SEED, "holdout")
     champ = dump(tmp_path, "champ", CHAMPION, "holdout")
@@ -195,7 +195,7 @@ def test_gate_certifies_final_claim_against_seed(tmp_path):
 
 def test_verdict_identical_to_template_copy():
     template = ROOT.parent.parent / "template" / "tools" / "verdict.py"
-    if not template.exists():  # example copied out of the repo — nothing to compare against
+    if not template.exists():  # example copied out of the repo; nothing to compare against
         return
     assert (ROOT / "tools" / "verdict.py").read_text() == template.read_text()
 

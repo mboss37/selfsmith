@@ -1,4 +1,4 @@
-"""tools/verdict.py is the mechanical half of the gate — these tests prove the machinery
+"""tools/verdict.py is the mechanical half of the gate; these tests prove the machinery
 itself: promotes only what the declared rules certify, rejects nulls and traps, fails
 closed when the search size is undeclared, and stays deterministic run-to-run."""
 import json
@@ -84,7 +84,7 @@ def test_confirm_refuses_continuous_values(tmp_path):
 
 
 def test_reproduce_rejects_planted_trap_on_real_data(tmp_path):
-    """keyword_rules wins on dev but not holdout — the mechanical gate must catch it."""
+    """keyword_rules wins on dev but not holdout; the mechanical gate must catch it."""
     champ = "zero_shot"  # seed champion the trap challenges
     r = run_verdict(
         "reproduce",
@@ -109,7 +109,7 @@ def test_reproduce_promotes_genuine_technique_on_real_data(tmp_path):
 
 def test_final_claim_certifies_on_real_data(tmp_path):
     """Champion vs baseline on holdout must survive the sign test deflated by the full
-    declared candidate budget (24) — the campaign's headline claim is mechanically true."""
+    declared candidate budget (24), so the campaign's headline claim is mechanically true."""
     r = run_verdict(
         "confirm",
         "--champion", eval_json(tmp_path, "zero_shot", "holdout"),
@@ -150,8 +150,8 @@ def test_mismatched_vector_lengths_fail_closed(tmp_path):
 
 
 def test_identical_to_template_copy():
-    """The tool is shared machinery — the instantiated copy must not drift from template."""
+    """The tool is shared machinery; the instantiated copy must not drift from template."""
     template = EXAMPLE_DIR.parent.parent / "template" / "tools" / "verdict.py"
-    if not template.exists():  # example copied out of the repo — nothing to compare against
+    if not template.exists():  # example copied out of the repo; nothing to compare against
         return
     assert VERDICT.read_text() == template.read_text()
