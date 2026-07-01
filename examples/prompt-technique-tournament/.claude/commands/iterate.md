@@ -10,7 +10,7 @@ This may run unattended; **never wait for a human** — if blocked, log it, run 
 
 ## The iteration (in order)
 
-1. **Evaluate.** Delegate to the `evaluator` subagent. Get: current metrics, data-health check, verdict, diagnosis, top problem, recommended focus. Correctness of measurement outranks any performance metric — if the measurement is broken, fix that first. If verdict is `insufficient_data`, append a note to `LOG.md` and stop — do not proceed.
+1. **Evaluate.** Delegate to the `evaluator` subagent. Get: current metrics, data-health check, verdict, diagnosis, top problem, recommended focus. Correctness of measurement outranks any performance metric — if the measurement is broken, fix that first. If measurement integrity is in any doubt, run `bash tools/metric-contract.sh`; if the metric fails its own contract, the ONLY admissible change this iteration is fixing the measurement. If verdict is `insufficient_data`, append a note to `LOG.md` and stop — do not proceed.
 
 2. **Decide ONE change.** Based on the evaluator's recommended focus and `GOAL.md` gap-priority order, pick exactly one change to make this iteration. Do not bundle multiple changes.
 
