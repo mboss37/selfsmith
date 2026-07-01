@@ -66,3 +66,16 @@ A challenger replaces the current champion **only if ALL of the following hold**
 **On Wilson CIs:** The harness reports Wilson 95% CIs for every scored technique. At n=20, genuine improvements often produce overlapping intervals — a gain from 7/20 to 11/20 (35% → 55%) is real and meaningful, but the intervals overlap. Treating overlapping CIs as "no edge" would cause Type-II errors on every genuine improvement at this sample size. The promote test is reproduction-on-holdout, not non-overlapping CIs. CIs are there so you can see the uncertainty honestly, not to gate promotion.
 
 The gate agent (`.claude/agents/gate.md`) runs these checks independently. Its verdict is binding — the orchestrator cannot override a REJECT.
+
+---
+
+## Mechanical certification (`tools/verdict.py`)
+
+The rules above are mechanized so the certification arithmetic is code the gate runs, not prose it interprets:
+
+- **Candidate budget, fixed up front: 24** — the 8 catalog techniques plus 16 combos (every 2- and 3-technique combination of the four mechanism-backed techniques `few_shot`, `chain_of_thought`, `decomposition`, `format_spec`, plus shortlisted `role`/`self_critique` stacks). The budget is declared here, at campaign start, and does not grow with the log. If the proposer wants candidates beyond it, that is a NEW campaign with a new budget — not an amendment to this one.
+- **Per-step promotion** = `verdict.py reproduce` (dev gain ≥ 2 cases, holdout gain same sign and ≥ half the dev gain). At n=20 an exact test cannot certify small steps; reproduction on the never-tuned holdout is the honest instrument, and the tool enforces it mechanically.
+- **Final claim** ("the converged champion genuinely beats the baseline") = `verdict.py confirm --search-size 24` — an exact two-sided sign test on the holdout, Bonferroni-deflated by the full declared budget. The converged champion passes it: 11W/0L, p ≈ 0.001 ≤ 0.05/24.
+- **Known-nothing control** = `verdict.py self-test`, run at the start of every gate review. A gate that would bless a null is a gate bug, and this catches it mechanically.
+
+The tool fails closed: `confirm` without a declared `--search-size` exits 3 and certifies nothing.

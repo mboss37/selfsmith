@@ -25,6 +25,27 @@ Default to skepticism. When in doubt, REJECT.
 - **Redundancy check.** For combos: does each added technique beyond the current champion resolve cases the champion doesn't? If `self_critique` adds 0 cases the champion's `chain_of_thought` didn't already solve, the technique is redundant — reject the combo (but note the individual technique may be worth cataloging as redundant for the leaderboard).
 - **Measurement integrity.** Same eval instrumentation, same split, no silent changes to `run_eval.py` that could inflate scores.
 
+## Mechanical certification — `tools/verdict.py` (judgment does not certify arithmetic)
+
+The certification arithmetic is code, not your opinion. Before ANY `approve`:
+
+1. `python3 tools/verdict.py self-test` — the known-nothing control, automated. If it fails, the gate machinery itself is broken: reject the change and flag "gate bug" as the top problem.
+2. Save per-case vectors and run the promote test (`reproduce` — the mechanical form of the holdout-reproduction rule):
+   ```bash
+   python3 eval/run_eval.py --technique <champion>   --split dev     --model mock | tail -n1 > /tmp/champ_dev.json
+   python3 eval/run_eval.py --technique <challenger> --split dev     --model mock | tail -n1 > /tmp/chal_dev.json
+   python3 eval/run_eval.py --technique <champion>   --split holdout --model mock | tail -n1 > /tmp/champ_hold.json
+   python3 eval/run_eval.py --technique <challenger> --split holdout --model mock | tail -n1 > /tmp/chal_hold.json
+   python3 tools/verdict.py reproduce \
+     --champion-dev /tmp/champ_dev.json --challenger-dev /tmp/chal_dev.json \
+     --champion-holdout /tmp/champ_hold.json --challenger-holdout /tmp/chal_hold.json
+   ```
+3. When declaring the tournament DONE, certify the final champion-vs-baseline claim with the sign test, deflated by the candidate budget fixed in `METHODOLOGY.md` (24):
+   ```bash
+   python3 tools/verdict.py confirm --champion /tmp/base_hold.json --challenger /tmp/champ_hold.json --search-size 24
+   ```
+4. A verdict.py **REJECT is binding** — you may not approve past it, and you may not adjust its inputs (search size, ratio, min effect) to flip it. A **PROMOTE is necessary, never sufficient** — keep vetoing on safety, redundancy, and measurement integrity.
+
 ## Hard rules (auto-reject if violated)
 
 1. Holdout mutated or paid model called — automatic reject, no reconsideration.

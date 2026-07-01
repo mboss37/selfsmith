@@ -48,7 +48,16 @@ Before any proposed change is applied:
 2. It checks that no safety constraint from `GOAL.md` is weakened.
 3. It checks that no guardrail floor in `.claude/hooks/guardrail.sh` is softened.
 4. It checks that the proposed metric improvement is plausible given the change.
-5. If any check fails, the change is rejected — iteration is logged as a no-op.
+5. It runs the **mechanical certification** in `tools/verdict.py` (self-test first, then the
+   mode matching the claim — `screen`/`reproduce`/`confirm`/`compare`/`floor`). The arithmetic
+   half of the gate is code, not judgment; a verdict.py REJECT cannot be argued past.
+6. If any check fails, the change is rejected — iteration is logged as a no-op.
+
+**Declare the candidate budget here, up front** (verdict.py `confirm`/`compare` refuse to
+certify without it): <!-- e.g. "CANDIDATE BUDGET: 30 — the N configs in the fixed grid" -->
+Every rule in "Not fooling yourself at the gate" below has its mechanical form in the tool:
+two-sided by construction, deflated by the declared budget (not the running log), fails closed
+when the search size is undeclared.
 
 <!-- Add domain-specific gate criteria here -->
 
